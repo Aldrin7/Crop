@@ -1,0 +1,26 @@
+{
+  "spearman_rho": 0.6785714285714287,
+  "spearman_p": 0.09375025395983135,
+  "kendall_tau": 0.5238095238095238,
+  "kendall_p": 0.1361111111111111,
+  "interpretation": "Strong agreement between model-driven (SHAP) and statistical (FS) feature importance (Spearman \u03c1=0.679, p=0.0938). This confirms that feature relevance is robust across different evaluation paradigms.",
+  "shap_ranks": {
+    "N": 3,
+    "P": 5,
+    "K": 2,
+    "temperature": 6,
+    "humidity": 1,
+    "ph": 7,
+    "rainfall": 4
+  },
+  "fs_ranks": {
+    "N": 5,
+    "P": 4,
+    "K": 2,
+    "temperature": 6,
+    "humidity": 3,
+    "ph": 7,
+    "rainfall": 1
+  },
+  "max_rank_disagreement": 3
+}

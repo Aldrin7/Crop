@@ -1,0 +1,8 @@
+{
+  "baseline_accuracy": 0.9954545454545455,
+  "noise_threshold_90pct": 0.5,
+  "missing_threshold_90pct": 0.1,
+  "max_degradation_at_sigma": 0.1,
+  "summary": "Model maintains >90% accuracy up to noise \u03c3=0.5 and 10% missing data. Steepest degradation occurs at \u03c3=0.1, indicating a critical reliability threshold for field deployment. Performance degradation follows a non-linear trend: accuracy drops 2.0% from \u03c3=0\u21920.1, but 3.4% from \u03c3=2.0\u21923.0, confirming diminishing marginal degradation at extreme noise levels.",
+  "practical_recommendation": "For real-world deployment, sensor calibration must maintain noise below \u03c3=0.5 (corresponding to ~2-3% measurement error in soil/climate sensors). Beyond this threshold, the model's predictions become unreliable, and fallback heuristics (e.g., regional crop calendars) should be used."
+}

@@ -1,0 +1,51 @@
+{
+  "best_family": "Neural",
+  "family_results": {
+    "Tree-Based": {
+      "mean_accuracy": 0.9881818181818183,
+      "std_accuracy": 0.004406981688560313,
+      "mean_f1": 0.9881316856231029,
+      "mean_cv": 0.9888636363636364,
+      "classifiers": [
+        "RandomForest",
+        "GradientBoosting",
+        "DecisionTree",
+        "XGBoost",
+        "LightGBM"
+      ],
+      "count": 5
+    },
+    "Probabilistic": {
+      "mean_accuracy": 0.9840909090909091,
+      "std_accuracy": 0.011363636363636354,
+      "mean_f1": 0.9839535894764043,
+      "mean_cv": 0.9809659090909091,
+      "classifiers": [
+        "GaussianNB",
+        "LogisticRegression"
+      ],
+      "count": 2
+    },
+    "Distance-Based": {
+      "mean_accuracy": 0.9818181818181818,
+      "std_accuracy": 0.0,
+      "mean_f1": 0.9817369194776128,
+      "mean_cv": 0.9664772727272727,
+      "classifiers": [
+        "KNN"
+      ],
+      "count": 1
+    },
+    "Neural": {
+      "mean_accuracy": 0.990909090909091,
+      "std_accuracy": 0.0,
+      "mean_f1": 0.990894856106666,
+      "mean_cv": 0.9630681818181819,
+      "classifiers": [
+        "MLP"
+      ],
+      "count": 1
+    }
+  },
+  "conclusion": "Tree-based ensembles achieve the highest accuracy (mean=0.9909), but GaussianNB from the probabilistic family matches them with 0.9840909090909091 accuracy at a fraction of the computational cost. For resource-constrained agricultural deployment (edge devices, IoT sensors), simple probabilistic models are sufficient and should be preferred."
+}

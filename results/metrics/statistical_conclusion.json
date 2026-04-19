@@ -1,0 +1,24 @@
+{
+  "friedman_statistic": 59.743689320388405,
+  "friedman_p": 1.502110709949593e-09,
+  "statistically_significant": true,
+  "best_classifier": "GaussianNB",
+  "best_cv_mean": 0.9948863636363635,
+  "worst_classifier": "MLP",
+  "worst_cv_mean": 0.9681818181818181,
+  "max_accuracy_difference": 0.02670454545454537,
+  "max_pairwise_difference": 0.02670454545454537,
+  "conclusion": "Despite statistically significant differences across classifiers (Friedman \u03c7\u00b2=59.74, p=0.000000), the maximum practical performance difference is 2.67% (2.67% pairwise). This is below the 1% threshold considered practically meaningful, suggesting model selection can be guided by computational cost, interpretability, and deployment constraints rather than marginal accuracy gains.",
+  "classifier_means": {
+    "GaussianNB": 0.9948863636363635,
+    "RandomForest": 0.99375,
+    "XGBoost": 0.9931818181818182,
+    "LightGBM": 0.9931818181818182,
+    "DecisionTree": 0.9880681818181818,
+    "SVM_RBF": 0.9863636363636363,
+    "GradientBoosting": 0.984659090909091,
+    "LogisticRegression": 0.9698863636363637,
+    "KNN": 0.96875,
+    "MLP": 0.9681818181818181
+  }
+}

@@ -1,0 +1,228 @@
+{
+  "worst_crops": [
+    {
+      "crop": "blackgram",
+      "f1": 0.9743589743589743
+    },
+    {
+      "crop": "rice",
+      "f1": 0.9743589743589743
+    },
+    {
+      "crop": "jute",
+      "f1": 0.975609756097561
+    },
+    {
+      "crop": "maize",
+      "f1": 0.975609756097561
+    },
+    {
+      "crop": "apple",
+      "f1": 1.0
+    }
+  ],
+  "best_crops": [
+    {
+      "crop": "orange",
+      "f1": 1.0
+    },
+    {
+      "crop": "papaya",
+      "f1": 1.0
+    },
+    {
+      "crop": "pigeonpeas",
+      "f1": 1.0
+    },
+    {
+      "crop": "pomegranate",
+      "f1": 1.0
+    },
+    {
+      "crop": "watermelon",
+      "f1": 1.0
+    }
+  ],
+  "top_misclassifications": [
+    {
+      "actual": "blackgram",
+      "predicted": "maize",
+      "count": 1
+    },
+    {
+      "actual": "rice",
+      "predicted": "jute",
+      "count": 1
+    }
+  ],
+  "per_crop_metrics": [
+    {
+      "crop": "blackgram",
+      "precision": 1.0,
+      "recall": 0.95,
+      "f1": 0.9743589743589743,
+      "support": 20.0
+    },
+    {
+      "crop": "rice",
+      "precision": 1.0,
+      "recall": 0.95,
+      "f1": 0.9743589743589743,
+      "support": 20.0
+    },
+    {
+      "crop": "jute",
+      "precision": 0.9523809523809523,
+      "recall": 1.0,
+      "f1": 0.975609756097561,
+      "support": 20.0
+    },
+    {
+      "crop": "maize",
+      "precision": 0.9523809523809523,
+      "recall": 1.0,
+      "f1": 0.975609756097561,
+      "support": 20.0
+    },
+    {
+      "crop": "apple",
+      "precision": 1.0,
+      "recall": 1.0,
+      "f1": 1.0,
+      "support": 20.0
+    },
+    {
+      "crop": "banana",
+      "precision": 1.0,
+      "recall": 1.0,
+      "f1": 1.0,
+      "support": 20.0
+    },
+    {
+      "crop": "chickpea",
+      "precision": 1.0,
+      "recall": 1.0,
+      "f1": 1.0,
+      "support": 20.0
+    },
+    {
+      "crop": "coconut",
+      "precision": 1.0,
+      "recall": 1.0,
+      "f1": 1.0,
+      "support": 20.0
+    },
+    {
+      "crop": "coffee",
+      "precision": 1.0,
+      "recall": 1.0,
+      "f1": 1.0,
+      "support": 20.0
+    },
+    {
+      "crop": "cotton",
+      "precision": 1.0,
+      "recall": 1.0,
+      "f1": 1.0,
+      "support": 20.0
+    },
+    {
+      "crop": "grapes",
+      "precision": 1.0,
+      "recall": 1.0,
+      "f1": 1.0,
+      "support": 20.0
+    },
+    {
+      "crop": "kidneybeans",
+      "precision": 1.0,
+      "recall": 1.0,
+      "f1": 1.0,
+      "support": 20.0
+    },
+    {
+      "crop": "lentil",
+      "precision": 1.0,
+      "recall": 1.0,
+      "f1": 1.0,
+      "support": 20.0
+    },
+    {
+      "crop": "mango",
+      "precision": 1.0,
+      "recall": 1.0,
+      "f1": 1.0,
+      "support": 20.0
+    },
+    {
+      "crop": "mothbeans",
+      "precision": 1.0,
+      "recall": 1.0,
+      "f1": 1.0,
+      "support": 20.0
+    },
+    {
+      "crop": "mungbean",
+      "precision": 1.0,
+      "recall": 1.0,
+      "f1": 1.0,
+      "support": 20.0
+    },
+    {
+      "crop": "muskmelon",
+      "precision": 1.0,
+      "recall": 1.0,
+      "f1": 1.0,
+      "support": 20.0
+    },
+    {
+      "crop": "orange",
+      "precision": 1.0,
+      "recall": 1.0,
+      "f1": 1.0,
+      "support": 20.0
+    },
+    {
+      "crop": "papaya",
+      "precision": 1.0,
+      "recall": 1.0,
+      "f1": 1.0,
+      "support": 20.0
+    },
+    {
+      "crop": "pigeonpeas",
+      "precision": 1.0,
+      "recall": 1.0,
+      "f1": 1.0,
+      "support": 20.0
+    },
+    {
+      "crop": "pomegranate",
+      "precision": 1.0,
+      "recall": 1.0,
+      "f1": 1.0,
+      "support": 20.0
+    },
+    {
+      "crop": "watermelon",
+      "precision": 1.0,
+      "recall": 1.0,
+      "f1": 1.0,
+      "support": 20.0
+    }
+  ],
+  "agronomic_explanations": [
+    {
+      "actual": "blackgram",
+      "predicted": "maize",
+      "count": 1,
+      "reason": "Distinct profiles \u2014 possible model confusion at decision boundary"
+    },
+    {
+      "actual": "rice",
+      "predicted": "jute",
+      "count": 1,
+      "reason": "Both share: rainfall, humidity, K"
+    }
+  ]
+}

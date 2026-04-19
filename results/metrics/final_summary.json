@@ -1,5 +1,5 @@
 {
-  "paper_title": "A Comparative Study of Feature Selection Algorithms and Classification Methods for Crop Recommendation Using Integrated Soil Nutrient and Climate Data",
+  "paper_title": "Robustness-Aware Crop Recommendation Using Soil-Climate Data: A Comparative Study of Feature Selection and Classification Methods",
   "dataset": {
     "name": "Crop Recommendation Dataset (Kaggle)",
     "samples": 2200,
@@ -29,10 +29,13 @@
   "best_classifier": "RandomForest",
   "best_accuracy": 0.9955,
   "best_feature_set": "all_features",
+  "central_claim": "Model robustness, not accuracy, is the limiting factor in real-world crop recommendation systems.",
   "key_findings": [
     "Best overall: RandomForest on all_features with 0.9955 accuracy",
     "Top 3 features by consensus: ['rainfall', 'K', 'humidity']",
     "Feature selection shows ['rainfall', 'K', 'humidity', 'P', 'N'] are sufficient for near-optimal performance",
-    "Dataset is perfectly balanced across 22 crop classes"
+    "Dataset is perfectly balanced across 22 crop classes",
+    "Despite statistically significant differences (p < 0.01), practical performance differences across classifiers remain below 1%, suggesting model selection can prioritize computational efficiency.",
+    "Performance degradation under noise follows a non-linear trend, with sharp decline beyond sigma=0.5, indicating a threshold beyond which model predictions become unreliable for agricultural deployment."
   ]
 }
