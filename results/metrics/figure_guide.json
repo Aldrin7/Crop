@@ -1,0 +1,60 @@
+{
+  "main_figures": [
+    {
+      "file": "03_correlation_heatmap",
+      "caption": "Feature correlation matrix showing inter-feature relationships"
+    },
+    {
+      "file": "04_class_distribution",
+      "caption": "Distribution of 22 crop classes (100 samples each)"
+    },
+    {
+      "file": "09_feature_selection_comparison",
+      "caption": "Feature selection methods comparison across 6 algorithms"
+    },
+    {
+      "file": "11_model_comparison",
+      "caption": "Classifier accuracy and F1-score across feature subsets"
+    },
+    {
+      "file": "12_confusion_matrices",
+      "caption": "Normalized confusion matrices for all classifiers"
+    },
+    {
+      "file": "13_roc_RandomForest",
+      "caption": "ROC curves for best classifier (Random Forest)"
+    },
+    {
+      "file": "18_ablation_study",
+      "caption": "Ablation study: feature count vs classification accuracy"
+    },
+    {
+      "file": "22_robustness_analysis",
+      "caption": "Model robustness to noise injection and feature dropout"
+    },
+    {
+      "file": "24_critical_difference_diagram",
+      "caption": "Nemenyi post-hoc critical difference diagram"
+    },
+    {
+      "file": "25_publication_overview",
+      "caption": "Combined methodology and results overview"
+    }
+  ],
+  "supplementary": [
+    "01_feature_distributions",
+    "02_boxplots",
+    "05_violin_per_class",
+    "06_pairplot",
+    "07_radar_chart",
+    "08_scaling_comparison",
+    "10_feature_selection_heatmap",
+    "14_per_class_f1",
+    "15_cross_validation",
+    "16_top_classifiers_radar",
+    "17_comprehensive_performance",
+    "19_sensitivity_rf",
+    "20_shap_importance",
+    "23_missing_value_robustness"
+  ]
+}

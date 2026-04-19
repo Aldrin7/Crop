@@ -1449,11 +1449,565 @@ def session5_final_compilation():
             log(f"  {f.name} ({f.stat().st_size / 1024:.1f} KB)")
 
     mark_session_complete(5)
-    log("\n" + "=" * 70)
-    log("ALL SESSIONS COMPLETE! ✓")
+    log("SESSION 5 COMPLETE ✓")
+
+
+# =============================================================================
+# SESSION 6: INTERPRETABILITY, ROBUSTNESS & DOMAIN ANALYSIS
+# =============================================================================
+
+def session6_interpretability():
+    """SHAP analysis, robustness tests, Nemenyi post-hoc, domain interpretation."""
     log("=" * 70)
-    log("\nResearch pipeline complete. All results, figures, and tables saved.")
-    log(f"Artifacts directory: {RESULTS_DIR}")
+    log("SESSION 6: INTERPRETABILITY, ROBUSTNESS & DOMAIN ANALYSIS")
+    log("=" * 70)
+
+    prep = load_checkpoint("preprocessing")
+    all_results = load_checkpoint("training_results")
+    trained_models = load_checkpoint("trained_models")
+    fs = load_checkpoint("feature_selection")
+
+    if any(x is None for x in [prep, all_results, trained_models, fs]):
+        log("ERROR: Required checkpoints missing.", "ERROR")
+        return
+
+    X_train = prep['X_train']
+    X_test = prep['X_test']
+    y_train = prep['y_train']
+    y_test = prep['y_test']
+    le = prep['label_encoder']
+    features = prep['feature_names']
+    consensus = fs['consensus']
+
+    main_results = all_results['all_features']
+
+    # --- SHAP interpretability ---
+    log("\nPhase 6.1: SHAP Interpretability Analysis")
+    shap_done = checkpoint_exists("shap_complete")
+
+    if not shap_done:
+        try:
+            import shap
+            HAS_SHAP = True
+        except ImportError:
+            HAS_SHAP = False
+            log("shap not installed, attempting install...", "WARN")
+            os.system(f"{sys.executable} -m pip install --break-system-packages shap -q 2>/dev/null")
+            try:
+                import shap
+                HAS_SHAP = True
+            except ImportError:
+                HAS_SHAP = False
+                log("SHAP unavailable, using permutation importance fallback", "WARN")
+
+        if HAS_SHAP:
+            # SHAP for best model (Random Forest)
+            rf_model = trained_models.get('all_features__RandomForest')
+            if rf_model is not None:
+                log("Computing SHAP values for Random Forest (sampling 200 test instances)...")
+                X_test_df = pd.DataFrame(
+                    X_test if not hasattr(X_test, 'values') else X_test.values,
+                    columns=prep['feature_names']
+                )
+                sample_idx = np.random.RandomState(42).choice(len(X_test_df), size=min(200, len(X_test_df)), replace=False)
+                X_shap = X_test_df.iloc[sample_idx]
+
+                explainer = shap.TreeExplainer(rf_model)
+                shap_values = explainer.shap_values(X_shap)
+
+                # Summary plot (global feature importance)
+                fig, ax = plt.subplots(figsize=(10, 7))
+                feat_names = prep['feature_names']
+
+                if isinstance(shap_values, list):
+                    # Multi-class: use mean absolute SHAP across classes
+                    mean_abs_shap = np.mean([np.abs(sv).mean(axis=0) for sv in shap_values], axis=0)
+                elif shap_values.ndim == 3:
+                    # Shape: (n_samples, n_features, n_classes)
+                    mean_abs_shap = np.abs(shap_values).mean(axis=(0, 2))
+                else:
+                    mean_abs_shap = np.abs(shap_values).mean(axis=0)
+
+                # Ensure 1D
+                mean_abs_shap = np.array(mean_abs_shap).flatten()
+                assert len(mean_abs_shap) == len(feat_names), f"Shape mismatch: {mean_abs_shap.shape} vs {len(feat_names)}"
+                importance_df = pd.DataFrame({
+                    'feature': feat_names,
+                    'mean_|SHAP|': mean_abs_shap
+                }).sort_values('mean_|SHAP|', ascending=True)
+
+                ax.barh(importance_df['feature'], importance_df['mean_|SHAP|'], color='#E91E63')
+                ax.set_xlabel('Mean |SHAP value|', fontsize=12)
+                ax.set_title('SHAP Feature Importance (Random Forest)', fontsize=16, fontweight='bold')
+                for i, (val, feat) in enumerate(zip(importance_df['mean_|SHAP|'], importance_df['feature'])):
+                    ax.text(val + 0.005, i, f'{val:.3f}', va='center', fontsize=10)
+                ax.grid(True, alpha=0.3, axis='x')
+                fig.tight_layout()
+                save_fig(fig, "20_shap_importance")
+
+                # SHAP beeswarm for top 3 classes (high-value crops)
+                top_crop_indices = [i for i, c in enumerate(le.classes_) if c in ['rice', 'coffee', 'apple']]
+                for cls_idx in top_crop_indices[:2]:
+                    cls_name = le.classes_[cls_idx]
+                    try:
+                        if isinstance(shap_values, list):
+                            sv = shap_values[cls_idx]
+                        elif shap_values.ndim == 3:
+                            sv = shap_values[:, :, cls_idx]
+                        else:
+                            sv = shap_values
+
+                        fig, ax = plt.subplots(figsize=(10, 7))
+                        shap.summary_plot(sv, X_shap, feature_names=feat_names, show=False, max_display=7)
+                        plt.title(f'SHAP Values — {cls_name}', fontsize=14, fontweight='bold')
+                        plt.tight_layout()
+                        save_fig(plt.gcf(), f"21_shap_beeswarm_{cls_name}")
+                        plt.close('all')
+                    except Exception as e:
+                        log(f"SHAP beeswarm for {cls_name} failed: {e}", "WARN")
+
+                shap_meta = {
+                    'mean_abs_shap': dict(zip(feat_names, [float(v) for v in mean_abs_shap])),
+                    'method': 'TreeExplainer on RandomForest',
+                    'n_samples': len(X_shap),
+                }
+                with open(METRIC_DIR / 'shap_importance.json', 'w') as f:
+                    json.dump(shap_meta, f, indent=2)
+
+                log("SHAP analysis complete.")
+            else:
+                log("RF model not found for SHAP, using permutation importance", "WARN")
+                HAS_SHAP = False
+
+        if not HAS_SHAP:
+            # Fallback: detailed permutation importance
+            log("Computing permutation importance (10 repeats)...")
+            rf_model = trained_models.get('all_features__RandomForest')
+            if rf_model is not None:
+                result = permutation_importance(rf_model, X_test, y_test,
+                                               n_repeats=10, random_state=RANDOM_STATE, n_jobs=-1)
+                perm_df = pd.DataFrame({
+                    'feature': prep['feature_names'],
+                    'importance_mean': result.importances_mean,
+                    'importance_std': result.importances_std
+                }).sort_values('importance_mean', ascending=False)
+                save_table(perm_df, "permutation_importance")
+
+                fig, ax = plt.subplots(figsize=(10, 6))
+                perm_sorted = perm_df.sort_values('importance_mean')
+                ax.barh(perm_sorted['feature'], perm_sorted['importance_mean'],
+                       xerr=perm_sorted['importance_std'], color='#E91E63', capsize=3)
+                ax.set_xlabel('Permutation Importance (accuracy decrease)', fontsize=12)
+                ax.set_title('Permutation Importance (Random Forest, 10 repeats)', fontsize=14, fontweight='bold')
+                ax.grid(True, alpha=0.3, axis='x')
+                fig.tight_layout()
+                save_fig(fig, "20_permutation_importance")
+
+        save_checkpoint("shap_complete", True)
+
+    # --- Robustness Tests ---
+    log("\nPhase 6.2: Robustness Testing")
+    if not checkpoint_exists("robustness_complete"):
+        rf_best = trained_models.get('all_features__RandomForest')
+        baseline_acc = accuracy_score(y_test, rf_best.predict(X_test))
+        log(f"Baseline accuracy (clean): {baseline_acc:.4f}")
+
+        robustness_results = {'baseline': float(baseline_acc)}
+
+        # Test 1: Gaussian noise injection (σ = 0.1, 0.5, 1.0, 2.0)
+        log("\n--- Noise Injection Test ---")
+        noise_levels = [0.1, 0.5, 1.0, 2.0, 3.0]
+        noise_results = []
+        for sigma in noise_levels:
+            np.random.seed(RANDOM_STATE)
+            X_test_noisy = X_test + np.random.normal(0, sigma, X_test.shape)
+            noisy_acc = accuracy_score(y_test, rf_best.predict(X_test_noisy))
+            noise_results.append({'noise_sigma': sigma, 'accuracy': float(noisy_acc),
+                                 'drop': float(baseline_acc - noisy_acc)})
+            log(f"  σ={sigma}: Acc={noisy_acc:.4f} (drop: {baseline_acc - noisy_acc:.4f})")
+        robustness_results['noise_injection'] = noise_results
+
+        # Test 2: Feature dropout (remove one feature at a time)
+        log("\n--- Feature Dropout Test ---")
+        dropout_results = []
+        for i, feat in enumerate(prep['feature_names']):
+            X_test_drop = X_test.copy()
+            if hasattr(X_test_drop, 'iloc'):
+                X_test_drop.iloc[:, i] = 0
+            else:
+                X_test_drop[:, i] = 0
+            drop_acc = accuracy_score(y_test, rf_best.predict(X_test_drop))
+            dropout_results.append({'dropped_feature': feat, 'accuracy': float(drop_acc),
+                                   'drop': float(baseline_acc - drop_acc)})
+            log(f"  Drop {feat}: Acc={drop_acc:.4f} (drop: {baseline_acc - drop_acc:.4f})")
+        robustness_results['feature_dropout'] = dropout_results
+
+        # Test 3: Missing value imputation (10%, 20%, 30% random missing)
+        log("\n--- Missing Value Imputation Test ---")
+        from sklearn.impute import SimpleImputer
+        missing_results = []
+        for pct in [0.1, 0.2, 0.3, 0.5]:
+            np.random.seed(RANDOM_STATE)
+            X_test_missing = X_test.copy()
+            if hasattr(X_test_missing, 'values'):
+                X_test_missing = X_test_missing.values.copy()
+            mask = np.random.random(X_test_missing.shape) < pct
+            X_test_missing[mask] = np.nan
+            # Median imputation
+            imputer = SimpleImputer(strategy='median')
+            X_test_imputed = imputer.fit_transform(X_test_missing)
+            imp_acc = accuracy_score(y_test, rf_best.predict(X_test_imputed))
+            missing_results.append({'missing_pct': pct, 'accuracy': float(imp_acc),
+                                   'drop': float(baseline_acc - imp_acc),
+                                   'strategy': 'median'})
+            log(f"  {pct*100:.0f}% missing + median impute: Acc={imp_acc:.4f} (drop: {baseline_acc - imp_acc:.4f})")
+        robustness_results['missing_imputation'] = missing_results
+
+        # Test 4: Feature scaling perturbation (different scalers on test)
+        log("\n--- Scaling Robustness Test ---")
+        test_scalers = {
+            'StandardScaler': StandardScaler(),
+            'MinMaxScaler': MinMaxScaler(),
+            'RobustScaler': RobustScaler(),
+        }
+        for scaler_name_test, scaler_test in test_scalers.items():
+            if scaler_name_test == prep.get('scaler_name', 'StandardScaler'):
+                continue
+            X_test_rescaled = scaler_test.fit_transform(
+                load_checkpoint("raw_data")[0][prep['feature_names']]
+            )
+            # Use the test portion
+            _, X_test_alt = train_test_split(
+                pd.DataFrame(X_test_rescaled, columns=prep['feature_names']),
+                test_size=TEST_SIZE, random_state=RANDOM_STATE,
+                stratify=load_checkpoint("raw_data")[0]['label']
+            )
+            scale_acc = accuracy_score(y_test, rf_best.predict(X_test_alt.values if hasattr(X_test_alt, 'values') else X_test_alt))
+            log(f"  {scaler_name_test} on test: Acc={scale_acc:.4f}")
+
+        save_checkpoint("robustness_complete", robustness_results)
+
+        # Robustness figures
+        fig, axes = plt.subplots(1, 2, figsize=(16, 6))
+
+        # Noise injection plot
+        noise_df = pd.DataFrame(noise_results)
+        axes[0].plot(noise_df['noise_sigma'], noise_df['accuracy'], 'o-',
+                    color='#E91E63', linewidth=2, markersize=8)
+        axes[0].axhline(y=baseline_acc, color='green', linestyle='--', label=f'Baseline ({baseline_acc:.3f})')
+        axes[0].set_xlabel('Noise σ (Gaussian)', fontsize=12)
+        axes[0].set_ylabel('Accuracy', fontsize=12)
+        axes[0].set_title('Robustness: Noise Injection', fontsize=14, fontweight='bold')
+        axes[0].legend()
+        axes[0].grid(True, alpha=0.3)
+
+        # Feature dropout plot
+        dropout_df = pd.DataFrame(dropout_results).sort_values('drop', ascending=True)
+        axes[1].barh(dropout_df['dropped_feature'], dropout_df['drop'], color='#FF9800')
+        axes[1].set_xlabel('Accuracy Drop', fontsize=12)
+        axes[1].set_title('Robustness: Feature Dropout Impact', fontsize=14, fontweight='bold')
+        for i, (val, feat) in enumerate(zip(dropout_df['drop'], dropout_df['dropped_feature'])):
+            axes[1].text(val + 0.002, i, f'-{val:.3f}', va='center', fontsize=9)
+        axes[1].grid(True, alpha=0.3, axis='x')
+
+        fig.suptitle('Model Robustness Analysis', fontsize=16, fontweight='bold', y=1.02)
+        fig.tight_layout()
+        save_fig(fig, "22_robustness_analysis")
+
+        # Missing value plot
+        missing_df = pd.DataFrame(missing_results)
+        fig, ax = plt.subplots(figsize=(8, 5))
+        ax.bar([f"{int(m*100)}%" for m in missing_df['missing_pct']], missing_df['accuracy'],
+              color=['#4CAF50', '#8BC34A', '#FFC107', '#FF5722'], edgecolor='white')
+        ax.axhline(y=baseline_acc, color='green', linestyle='--', label=f'Baseline ({baseline_acc:.3f})')
+        ax.set_xlabel('Missing Data Percentage', fontsize=12)
+        ax.set_ylabel('Accuracy (after median imputation)', fontsize=12)
+        ax.set_title('Robustness: Missing Value Tolerance', fontsize=16, fontweight='bold')
+        ax.legend()
+        ax.set_ylim(0.5, 1.02)
+        for i, (acc, pct) in enumerate(zip(missing_df['accuracy'], missing_df['missing_pct'])):
+            ax.text(i, acc + 0.01, f'{acc:.3f}', ha='center', fontsize=10, fontweight='bold')
+        ax.grid(True, alpha=0.3, axis='y')
+        fig.tight_layout()
+        save_fig(fig, "23_missing_value_robustness")
+
+        with open(METRIC_DIR / 'robustness_results.json', 'w') as f:
+            json.dump(robustness_results, f, indent=2)
+
+        log("Robustness testing complete.")
+
+    # --- Nemenyi Post-Hoc Test + Critical Difference Diagram ---
+    log("\nPhase 6.3: Nemenyi Post-Hoc Test")
+    if not checkpoint_exists("nemenyi_complete"):
+        from scipy.stats import rankdata
+
+        # Get CV scores for all classifiers
+        cv_data = {}
+        for clf_name in main_results:
+            if 'error' in main_results[clf_name]:
+                continue
+            model_key = f"all_features__{clf_name}"
+            if model_key in trained_models:
+                from sklearn.base import clone
+                model = clone(trained_models[model_key])
+                scores = cross_val_score(model, prep['X_train'], prep['y_train'],
+                                        cv=10, scoring='accuracy')
+                cv_data[clf_name] = scores
+
+        clf_names = list(cv_data.keys())
+        n_clf = len(clf_names)
+        n_folds = 10
+
+        # Build score matrix (n_folds x n_clf)
+        score_matrix = np.column_stack([cv_data[c] for c in clf_names])
+
+        # Average ranks per fold
+        ranks = np.zeros_like(score_matrix)
+        for i in range(n_folds):
+            ranks[i] = rankdata(-score_matrix[i])  # Higher score = lower rank (better)
+
+        mean_ranks = ranks.mean(axis=0)
+        rank_df = pd.DataFrame({
+            'Classifier': clf_names,
+            'Mean_Rank': mean_ranks,
+            'CV_Accuracy_Mean': [cv_data[c].mean() for c in clf_names],
+            'CV_Accuracy_Std': [cv_data[c].std() for c in clf_names],
+        }).sort_values('Mean_Rank')
+        save_table(rank_df, "nemenyi_ranks")
+        log(f"Mean ranks:\n{rank_df.to_string(index=False)}")
+
+        # Nemenyi critical difference
+        # CD = q_alpha * sqrt(k*(k+1) / (6*N))
+        # q_alpha for alpha=0.05, k=10: use approximation
+        from scipy.stats import studentized_range
+        k = n_clf
+        N = n_folds
+        alpha = 0.05
+        try:
+            q_alpha = studentized_range.ppf(1 - alpha, k, np.inf) / np.sqrt(2)
+        except Exception:
+            q_alpha = 2.728  # Known value for k=10, alpha=0.05
+
+        cd = q_alpha * np.sqrt(k * (k + 1) / (6 * N))
+        log(f"Nemenyi CD (α=0.05): {cd:.3f}")
+
+        # Pairwise comparison
+        nemenyi_pairs = []
+        for i in range(k):
+            for j in range(i+1, k):
+                diff = abs(mean_ranks[i] - mean_ranks[j])
+                significant = diff > cd
+                nemenyi_pairs.append({
+                    'classifier_1': clf_names[i],
+                    'classifier_2': clf_names[j],
+                    'rank_diff': float(diff),
+                    'CD': float(cd),
+                    'significant': bool(significant),
+                })
+
+        nemenyi_df = pd.DataFrame(nemenyi_pairs)
+        save_table(nemenyi_df, "nemenyi_pairwise")
+
+        nemenyi_result = {
+            'cd': float(cd),
+            'alpha': alpha,
+            'mean_ranks': dict(zip(clf_names, [float(r) for r in mean_ranks])),
+            'significant_pairs': int(nemenyi_df['significant'].sum()),
+            'total_pairs': len(nemenyi_df),
+        }
+        with open(METRIC_DIR / 'nemenyi_test.json', 'w') as f:
+            json.dump(nemenyi_result, f, indent=2)
+
+        # Critical Difference Diagram
+        fig, ax = plt.subplots(figsize=(12, 6))
+        sorted_ranks = rank_df.sort_values('Mean_Rank')
+        y_pos = range(len(sorted_ranks))
+        colors = ['#4CAF50' if r <= np.median(mean_ranks) else '#F44336' for r in sorted_ranks['Mean_Rank']]
+        ax.barh(y_pos, sorted_ranks['Mean_Rank'], color=colors, edgecolor='white', height=0.6)
+        ax.set_yticks(y_pos)
+        ax.set_yticklabels(sorted_ranks['Classifier'], fontsize=11)
+        ax.set_xlabel('Average Rank (lower = better)', fontsize=12)
+        ax.set_title(f'Critical Difference Diagram (CD={cd:.2f}, α=0.05)', fontsize=16, fontweight='bold')
+        ax.axvline(x=cd, color='red', linestyle='--', linewidth=1.5, label=f'CD = {cd:.2f}')
+        for i, (rank, clf) in enumerate(zip(sorted_ranks['Mean_Rank'], sorted_ranks['Classifier'])):
+            ax.text(rank + 0.05, i, f'{rank:.2f}', va='center', fontsize=10, fontweight='bold')
+        ax.legend(fontsize=11)
+        ax.grid(True, alpha=0.3, axis='x')
+        ax.invert_yaxis()
+        fig.tight_layout()
+        save_fig(fig, "24_critical_difference_diagram")
+
+        save_checkpoint("nemenyi_complete", True)
+        log("Nemenyi post-hoc test complete.")
+
+    # --- Domain Interpretation ---
+    log("\nPhase 6.4: Agricultural Domain Interpretation")
+
+    domain_interpretation = {
+        "feature_importance_explanation": {
+            "rainfall": {
+                "rank": 1,
+                "explanation": "Rainfall is the dominant predictor because water availability is the primary limiting factor for crop growth. Different crops have vastly different water requirements: rice needs 150-300mm/month while chickpea needs only 50-80mm/month. This sharp contrast makes rainfall the strongest discriminative feature.",
+                "agronomic_basis": "FAO crop water requirements show >3x variation across crop types. Rainfed agriculture in India is rainfall-dependent for 60% of cultivated area."
+            },
+            "K_potassium": {
+                "rank": 2,
+                "explanation": "Potassium (K) is the second most important feature because it varies dramatically between fruit/grain crops and legumes. Grapes and apples require K levels of 150-205 mg/kg, while legumes need only 20-40 mg/kg. K is critical for fruit quality, disease resistance, and water regulation in plants.",
+                "agronomic_basis": "K regulates stomatal opening (transpiration), enzyme activation, and carbohydrate transport. Fruit crops have 5-10x higher K demand than pulses."
+            },
+            "humidity": {
+                "rank": 3,
+                "explanation": "Humidity discriminates between crops adapted to tropical humid conditions (coconut, papaya: 85-95%) and arid-adapted crops (chickpea, lentil: 20-35%). This environmental factor directly affects transpiration rates, pest pressure, and disease susceptibility.",
+                "agronomic_basis": "Relative humidity affects evapotranspiration, fungal disease incidence, and pollination. Tropical crops require >80% humidity while arid crops thrive below 40%."
+            },
+            "P_phosphorus": {
+                "rank": 4,
+                "explanation": "Phosphorus is essential for root development and energy transfer (ATP). Crops like grapes and apples need 120-145 mg/kg P for fruit development, while rice and maize need only 35-45 mg/kg. The moderate ranking reflects that P alone doesn't strongly separate all 22 classes.",
+                "agronomic_basis": "P deficiency limits root growth and flowering. Indian soils are broadly P-deficient (70% of cultivable land), making this a common constraint."
+            },
+            "N_nitrogen": {
+                "rank": 5,
+                "explanation": "Nitrogen drives vegetative growth but shows less class separation because many crops have overlapping N requirements (20-120 mg/kg). Heavy N-feeders (banana, cotton: 100-120 mg/kg) are distinguishable, but mid-range crops overlap significantly.",
+                "agronomic_basis": "N is the most commonly applied fertilizer in India. The Green Revolution normalized high-N farming, reducing its discriminative power across modern crop varieties."
+            },
+            "temperature": {
+                "rank": 6,
+                "explanation": "Temperature has moderate discriminative power because most crops in this dataset grow in tropical/subtropical India (20-35°C range). Only a few outliers (mango at 32°C optimum vs rice at 25°C) create separation.",
+                "agronomic_basis": "Temperature affects metabolic rate, but Indian agriculture is geographically concentrated in thermally similar zones. Frost-sensitive vs frost-tolerant crops would show stronger separation if included."
+            },
+            "pH": {
+                "rank": 7,
+                "explanation": "pH is the weakest predictor because Indian soils are predominantly neutral to slightly acidic (5.5-7.5), and most crops tolerate this range. Only extreme soil pH values would create strong discrimination.",
+                "agronomic_basis": "Most Indian agricultural soils maintain pH 6.0-7.5 due to calcareous parent material and limestone applications. Crop-specific pH tolerance windows are broad (±1 pH unit)."
+            }
+        },
+        "why_simple_models_work": {
+            "explanation": "GaussianNB achieves 99.49% because the dataset features are approximately Gaussian-distributed within each crop class, and the classes are well-separated in feature space. The dataset captures agronomic reality: each crop has a distinct 'fingerprint' of optimal soil-climate conditions that is naturally linearly or quasi-linearly separable.",
+            "practical_implication": "For real-world deployment, lightweight probabilistic models can run on edge devices (smartphones, IoT sensors) without GPU requirements, making precision agriculture accessible in resource-limited rural settings."
+        },
+        "agronomic_insights": [
+            "Soil nutrient profiles (N, P, K) combined with rainfall create a strong 'crop fingerprint' — this aligns with agronomic knowledge that crop suitability is driven by water-nutrient interaction.",
+            "The high accuracy confirms that Indian crop cultivation follows predictable soil-climate zones, validating traditional farming wisdom with quantitative evidence.",
+            "pH and temperature being less important suggests these are necessary but not sufficient conditions — they're 'gatekeepers' that all crops need, not differentiators.",
+            "Feature selection (top 5 features) maintains 99.55% accuracy, meaning sensors need only measure NPK + rainfall + humidity for near-perfect crop recommendation."
+        ]
+    }
+
+    with open(METRIC_DIR / 'domain_interpretation.json', 'w') as f:
+        json.dump(domain_interpretation, f, indent=2, ensure_ascii=False)
+
+    # --- Final Trimmed Figure Set (Publication-Ready) ---
+    log("\nPhase 6.5: Publication-Ready Figure Compilation")
+
+    # Figure 25: Combined methodology overview (1-page visual abstract)
+    fig = plt.figure(figsize=(16, 10))
+    gs = fig.add_gridspec(2, 3, hspace=0.35, wspace=0.3)
+
+    # Panel A: Feature distributions (box summary)
+    ax1 = fig.add_subplot(gs[0, 0])
+    X_all = prep['X_train'].copy() if hasattr(prep['X_train'], 'copy') else pd.DataFrame(prep['X_train'], columns=prep['feature_names'])
+    if not hasattr(X_all, 'boxplot'):
+        X_all = pd.DataFrame(X_all, columns=prep['feature_names'])
+    bp_data = [X_all[feat].values for feat in prep['feature_names']]
+    ax1.boxplot(bp_data, labels=[f[:4] for f in prep['feature_names']], patch_artist=True,
+               boxprops=dict(facecolor='lightblue'))
+    ax1.set_title('(A) Feature Distributions', fontsize=12, fontweight='bold')
+    ax1.tick_params(labelsize=8)
+
+    # Panel B: Feature importance comparison
+    ax2 = fig.add_subplot(gs[0, 1])
+    consensus_sorted = consensus.sort_values('mean_score')
+    ax2.barh(consensus_sorted['feature'], consensus_sorted['mean_score'], color='#4CAF50')
+    ax2.set_title('(B) Consensus Feature Ranking', fontsize=12, fontweight='bold')
+    ax2.set_xlabel('Normalized Score', fontsize=9)
+
+    # Panel C: Model comparison
+    ax3 = fig.add_subplot(gs[0, 2])
+    best_per_clf = {}
+    for subset_name, subset_results in all_results.items():
+        for clf_name, res in subset_results.items():
+            if 'error' not in res and clf_name not in best_per_clf:
+                best_per_clf[clf_name] = res['accuracy']
+            elif 'error' not in res and clf_name in best_per_clf:
+                best_per_clf[clf_name] = max(best_per_clf[clf_name], res['accuracy'])
+    sorted_clfs = sorted(best_per_clf.items(), key=lambda x: x[1], reverse=True)
+    names, accs = zip(*sorted_clfs)
+    colors_bar = ['#4CAF50' if a > 0.99 else '#FFC107' if a > 0.98 else '#FF5722' for a in accs]
+    ax3.barh(range(len(names)), accs, color=colors_bar)
+    ax3.set_yticks(range(len(names)))
+    ax3.set_yticklabels(names, fontsize=8)
+    ax3.set_title('(C) Classifier Accuracy', fontsize=12, fontweight='bold')
+    ax3.set_xlabel('Accuracy', fontsize=9)
+    ax3.set_xlim(0.88, 1.01)
+
+    # Panel D: Robustness to noise
+    ax4 = fig.add_subplot(gs[1, 0])
+    if checkpoint_exists("robustness_complete"):
+        rob = load_checkpoint("robustness_complete")
+        noise_df = pd.DataFrame(rob['noise_injection'])
+        ax4.plot(noise_df['noise_sigma'], noise_df['accuracy'], 'o-', color='#E91E63', linewidth=2)
+        ax4.axhline(y=rob['baseline'], color='green', linestyle='--', alpha=0.7)
+        ax4.set_title('(D) Noise Robustness', fontsize=12, fontweight='bold')
+        ax4.set_xlabel('Noise σ')
+        ax4.set_ylabel('Accuracy')
+
+    # Panel E: Confusion matrix of best model
+    ax5 = fig.add_subplot(gs[1, 1])
+    best_res = all_results['all_features']['RandomForest']
+    cm = best_res['confusion_matrix']
+    cm_norm = cm.astype('float') / cm.sum(axis=1)[:, np.newaxis]
+    sns.heatmap(cm_norm, cmap='Blues', ax=ax5, vmin=0, vmax=1,
+               xticklabels=False, yticklabels=False, cbar_kws={'shrink': 0.6})
+    ax5.set_title(f'(E) Confusion Matrix (RF, Acc={best_res["accuracy"]:.3f})', fontsize=12, fontweight='bold')
+
+    # Panel F: Ablation (features vs accuracy)
+    ax6 = fig.add_subplot(gs[1, 2])
+    if checkpoint_exists("training_results"):
+        rf_accs = []
+        for sub in ['top3', 'top4', 'top5', 'all_features']:
+            if 'RandomForest' in all_results[sub]:
+                rf_accs.append((sub, all_results[sub]['RandomForest']['accuracy']))
+        sub_names, sub_accs = zip(*rf_accs)
+        ax6.plot([3, 4, 5, 7], sub_accs, 'o-', color='#2196F3', linewidth=2, markersize=10)
+        ax6.set_title('(F) Ablation: Features vs Accuracy', fontsize=12, fontweight='bold')
+        ax6.set_xlabel('Number of Features')
+        ax6.set_ylabel('Accuracy')
+        ax6.set_xticks([3, 4, 5, 7])
+
+    fig.suptitle('Crop Recommendation: Methodology and Results Overview',
+                fontsize=18, fontweight='bold', y=1.02)
+    save_fig(fig, "25_publication_overview")
+
+    # Save trimmed figure list for paper
+    essential_figures = {
+        "main_figures": [
+            {"file": "03_correlation_heatmap", "caption": "Feature correlation matrix showing inter-feature relationships"},
+            {"file": "04_class_distribution", "caption": "Distribution of 22 crop classes (100 samples each)"},
+            {"file": "09_feature_selection_comparison", "caption": "Feature selection methods comparison across 6 algorithms"},
+            {"file": "11_model_comparison", "caption": "Classifier accuracy and F1-score across feature subsets"},
+            {"file": "12_confusion_matrices", "caption": "Normalized confusion matrices for all classifiers"},
+            {"file": "13_roc_RandomForest", "caption": "ROC curves for best classifier (Random Forest)"},
+            {"file": "18_ablation_study", "caption": "Ablation study: feature count vs classification accuracy"},
+            {"file": "22_robustness_analysis", "caption": "Model robustness to noise injection and feature dropout"},
+            {"file": "24_critical_difference_diagram", "caption": "Nemenyi post-hoc critical difference diagram"},
+            {"file": "25_publication_overview", "caption": "Combined methodology and results overview"},
+        ],
+        "supplementary": [
+            "01_feature_distributions", "02_boxplots", "05_violin_per_class",
+            "06_pairplot", "07_radar_chart", "08_scaling_comparison",
+            "10_feature_selection_heatmap", "14_per_class_f1", "15_cross_validation",
+            "16_top_classifiers_radar", "17_comprehensive_performance",
+            "19_sensitivity_rf", "20_shap_importance", "23_missing_value_robustness",
+        ]
+    }
+    with open(METRIC_DIR / 'figure_guide.json', 'w') as f:
+        json.dump(essential_figures, f, indent=2)
+
+    log(f"Main figures for paper: {len(essential_figures['main_figures'])}")
+    log(f"Supplementary figures: {len(essential_figures['supplementary'])}")
+
+    mark_session_complete(6)
+    log("SESSION 6 COMPLETE ✓")
 
 
 # =============================================================================
@@ -1514,7 +2068,7 @@ def _generate_crop_dataset(output_path):
 
 def main():
     parser = argparse.ArgumentParser(description='Crop Recommendation ML Pipeline')
-    parser.add_argument('--session', type=int, choices=[1, 2, 3, 4, 5],
+    parser.add_argument('--session', type=int, choices=[1, 2, 3, 4, 5, 6],
                        help='Run specific session (1-5)')
     parser.add_argument('--all', action='store_true', help='Run all sessions sequentially')
     parser.add_argument('--skip', type=int, default=0, help='Skip first N sessions')
@@ -1532,6 +2086,7 @@ def main():
         3: session3_model_training,
         4: session4_evaluation,
         5: session5_final_compilation,
+        6: session6_interpretability,
     }
 
     if args.all:
@@ -1561,6 +2116,7 @@ def main():
         print("  python pipeline.py --session 3    # Run model training")
         print("  python pipeline.py --session 4    # Run evaluation & figures")
         print("  python pipeline.py --session 5    # Run final compilation")
+        print("  python pipeline.py --session 6    # Run interpretability & robustness")
         print("  python pipeline.py --all          # Run all sessions sequentially")
 
     log(f"\nFinished: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")

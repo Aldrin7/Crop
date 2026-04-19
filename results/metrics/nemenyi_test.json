@@ -1,0 +1,18 @@
+{
+  "cd": 4.283647813349612,
+  "alpha": 0.05,
+  "mean_ranks": {
+    "RandomForest": 3.4,
+    "SVM_RBF": 5.4,
+    "KNN": 8.95,
+    "DecisionTree": 4.65,
+    "GradientBoosting": 5.95,
+    "LogisticRegression": 8.35,
+    "MLP": 8.65,
+    "GaussianNB": 2.75,
+    "XGBoost": 3.55,
+    "LightGBM": 3.35
+  },
+  "significant_pairs": 13,
+  "total_pairs": 45
+}
