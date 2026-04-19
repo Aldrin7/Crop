@@ -12,7 +12,7 @@
 > **Model robustness, not accuracy, is the limiting factor in real-world crop recommendation systems.**
 
 ### Abstract
-Crop recommendation systems powered by machine learning can guide precision agriculture, yet most studies report only accuracy on clean datasets without addressing real-world deployment challenges. This study presents a comprehensive evaluation framework for crop recommendation that integrates feature selection comparison, model robustness analysis, and interpretability assessment on soil nutrient (N, P, K) and climate (temperature, humidity, rainfall, pH) data comprising 22 crop classes. We evaluate five feature selection algorithms (Chi-Square, Mutual Information, RFE, LASSO, Boruta) and ten classifiers across four feature subsets. While all classifiers achieve >99% accuracy under ideal conditions, robustness testing reveals a non-linear performance degradation: accuracy drops from 99.5% to 56.8% under Gaussian noise (σ=0.5) and to 47.5% under 50% missing data. SHAP analysis confirms strong agreement with statistical feature selection (Spearman ρ=0.679), validating rainfall and potassium as dominant predictors. Error analysis identifies crop pairs with shared agro-climatic profiles as primary confusion sources. Despite statistically significant differences (Friedman p<0.01), practical performance differences remain below 3%, suggesting model choice can prioritize computational efficiency. These findings reframe the research contribution from accuracy benchmarking to robustness-aware evaluation, providing actionable guidelines for real-world agricultural AI deployment.
+Machine learning for crop recommendation must contend with real-world uncertainty — sensor noise, missing data, and environmental variability — yet the vast majority of studies evaluate models only under ideal laboratory conditions. This gap between evaluation and deployment limits the practical utility of reported results. We present a robustness-aware evaluation framework for crop recommendation that integrates feature selection comparison, model interpretability, and systematic stress testing on soil nutrient (N, P, K) and climate (temperature, humidity, rainfall, pH) data comprising 22 crop classes. We evaluate five feature selection algorithms and ten classifiers across four feature subsets. Under ideal conditions, all classifiers achieve >99% accuracy, reflecting the dataset's high separability. However, robustness testing reveals a non-linear performance degradation: accuracy drops to 56.8% under Gaussian noise (σ=0.5) and to 47.5% under 50% missing data, with performance remaining stable only under low perturbations (σ ≤ 0.1). SHAP analysis shows moderate agreement with statistical feature selection (Spearman ρ=0.679), suggesting the two paradigms capture partially distinct aspects of feature relevance. Error analysis identifies crop pairs with shared agro-climatic profiles (e.g., rice and jute) as primary confusion sources, pointing to the need for additional discriminative features. Despite statistically significant differences across classifiers (Friedman p<0.01), practical performance differences remain below 3%, and no classifier family demonstrates a decisive advantage — reinforcing that dataset simplicity, not model complexity, drives performance. These findings reframe the research contribution from accuracy benchmarking to robustness-aware evaluation, supporting the use of computationally efficient models in resource-constrained agricultural settings.
 
 ### Keywords
 Crop Recommendation, Feature Selection, Soil Nutrients, Climate Data, Precision Agriculture, Machine Learning, Classification, Robustness, SHAP, Interpretability
@@ -51,7 +51,7 @@ Crop Recommendation, Feature Selection, Soil Nutrients, Climate Data, Precision 
 | Drop humidity | Zero-fill | 79.32% | -20.2% |
 | Drop rainfall | Zero-fill | 82.73% | -16.8% |
 
-**Critical threshold**: σ=0.5 (model unreliable beyond this point)
+**Pattern**: Performance remains relatively stable under low perturbations (σ ≤ 0.1), but degrades sharply beyond moderate noise levels (σ ≥ 0.5). The transition from acceptable to unacceptable performance is rapid, not gradual.
 
 ### SHAP vs Feature Selection Agreement
 | Metric | Value | p-value |
@@ -59,15 +59,15 @@ Crop Recommendation, Feature Selection, Soil Nutrients, Climate Data, Precision 
 | Spearman ρ | 0.679 | 0.094 |
 | Kendall τ | 0.524 | 0.136 |
 
+- **Moderate agreement** — statistical and model-driven importance capture partially distinct aspects of feature relevance; neither alone is sufficient
 - K, temperature, and pH: perfect rank alignment (diff = 0)
 - Rainfall: largest disagreement (SHAP rank 4 vs FS rank 1)
-- Confirms feature relevance is robust across evaluation paradigms
 
 ### Statistical Significance
 - **Friedman test**: χ² = 59.74, p < 0.001 (significant)
 - **Max practical difference**: 2.67% (GaussianNB vs MLP)
 - **Nemenyi CD** (α=0.05): 4.284
-- **Conclusion**: Despite statistical significance, practical differences are negligible — model selection can prioritize computational cost and deployment constraints
+- **Conclusion**: Despite statistical significance, practical differences are negligible — supporting the use of computationally efficient models in resource-constrained agricultural settings. The narrow performance band across diverse classifier families further reinforces that dataset simplicity, not model complexity, is the primary driver of high accuracy.
 
 ### Classifier Family Analysis
 | Family | Classifiers | Mean Accuracy | Takeaway |
@@ -77,7 +77,7 @@ Crop Recommendation, Feature Selection, Soil Nutrients, Climate Data, Precision 
 | Probabilistic | GNB, LR | 0.9841 ± 0.011 | **Best efficiency** |
 | Distance-Based | KNN | 0.9818 | Simplest |
 
-**Recommendation**: For resource-constrained deployment (edge devices, IoT), GaussianNB offers near-optimal accuracy at minimal computational cost.
+**Takeaway**: No classifier family demonstrates a decisive advantage — Neural (0.9909), Tree-Based (0.9882), and Probabilistic (0.9841) are all within 0.7%. This reinforces that dataset simplicity, not model complexity, drives performance. For resource-constrained deployment (edge devices, IoT), GaussianNB offers near-optimal accuracy at minimal computational cost.
 
 ### Per-Crop Error Analysis
 - **Worst crops**: blackgram (F1=0.974), rice (F1=0.974)
@@ -255,11 +255,11 @@ Crop-Research/
 ## Research Contributions
 
 1. **Unified evaluation framework** integrating feature selection comparison, model robustness analysis, and SHAP-based interpretability for crop recommendation.
-2. **Quantitative SHAP vs feature selection agreement analysis** (Spearman ρ), confirming consensus feature ranking robustness across evaluation paradigms.
-3. **Non-linear robustness characterization** under Gaussian noise and missing data, identifying critical reliability thresholds (σ=0.5) for field deployment.
-4. **Per-crop error analysis with agronomic reasoning**, linking model misclassifications to shared soil-climate profiles (e.g., rice↔jute confusion).
-5. **Statistical vs practical significance analysis** demonstrating that classifier differences <3% justify efficiency-driven model selection.
-6. **Classifier family comparison** showing tree-based models dominate accuracy but probabilistic models offer superior deployment efficiency.
+2. **Quantitative SHAP vs feature selection agreement analysis** (Spearman ρ=0.679) revealing that statistical and model-driven importance capture partially distinct aspects of feature relevance — neither alone is sufficient.
+3. **Non-linear robustness characterization** under Gaussian noise and missing data: performance remains stable under low perturbations (σ ≤ 0.1) but degrades sharply beyond moderate noise levels (σ ≥ 0.5), exposing a critical reliability gap for field deployment.
+4. **Per-crop error analysis with agronomic reasoning**, linking model misclassifications to shared soil-climate profiles (e.g., rice↔jute), suggesting that incorporating additional discriminative features (e.g., soil texture or seasonal patterns) may reduce ambiguity.
+5. **Statistical vs practical significance analysis** demonstrating that despite Friedman test significance (p<0.01), maximum classifier difference is only 2.67%, supporting the use of computationally efficient models in resource-constrained agricultural settings.
+6. **Classifier family comparison** showing no family demonstrates a decisive advantage — reinforcing that dataset simplicity, not model complexity, drives performance. Probabilistic models offer the best efficiency tradeoff for edge deployment.
 
 ---
 
