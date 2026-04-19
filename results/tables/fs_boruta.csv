@@ -1,0 +1,8 @@
+,feature,boruta_ranking,boruta_support,boruta_tentative
+0,N,1,True,False
+1,P,1,True,False
+2,K,1,True,False
+3,temperature,1,True,False
+4,humidity,1,True,False
+5,ph,1,True,False
+6,rainfall,1,True,False

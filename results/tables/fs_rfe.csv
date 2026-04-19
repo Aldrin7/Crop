@@ -1,0 +1,8 @@
+,feature,rfe_ranking,rfe_support
+6,rainfall,1,True
+4,humidity,2,False
+2,K,3,False
+1,P,4,False
+0,N,5,False
+3,temperature,6,False
+5,ph,7,False

@@ -1,0 +1,7 @@
+Study,Accuracy,Method
+This Study,0.9955,RandomForest
+Patil & Naveen (2023),0.99,Random Forest
+Rajak et al. (2022),0.98,XGBoost
+Das et al. (2023),0.97,SVM
+Reddy et al. (2021),0.96,KNN
+Sharma et al. (2022),0.98,Decision Tree

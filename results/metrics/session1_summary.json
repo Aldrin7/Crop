@@ -1,0 +1,43 @@
+{
+  "session": 1,
+  "timestamp": "2026-04-20T00:47:11.115403",
+  "dataset": "Crop Recommendation (Kaggle - Atharva Ingle)",
+  "samples": 2200,
+  "features": 7,
+  "classes": 22,
+  "feature_names": [
+    "N",
+    "P",
+    "K",
+    "temperature",
+    "humidity",
+    "ph",
+    "rainfall"
+  ],
+  "class_names": [
+    "apple",
+    "banana",
+    "blackgram",
+    "chickpea",
+    "coconut",
+    "coffee",
+    "cotton",
+    "grapes",
+    "jute",
+    "kidneybeans",
+    "lentil",
+    "maize",
+    "mango",
+    "mothbeans",
+    "mungbean",
+    "muskmelon",
+    "orange",
+    "papaya",
+    "pigeonpeas",
+    "pomegranate",
+    "rice",
+    "watermelon"
+  ],
+  "missing_values": 0,
+  "duplicates": 0
+}

@@ -1,0 +1,24 @@
+{
+  "methods_used": [
+    "chi2",
+    "mutual_info",
+    "rfe",
+    "lasso",
+    "boruta",
+    "random_forest",
+    "consensus"
+  ],
+  "best_features_top3": [
+    "rainfall",
+    "K",
+    "humidity"
+  ],
+  "best_features_top5": [
+    "rainfall",
+    "K",
+    "humidity",
+    "P",
+    "N"
+  ],
+  "worst_feature": "ph"
+}
