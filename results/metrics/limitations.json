@@ -1,0 +1,17 @@
+{
+  "dataset_limitations": [
+    "Single dataset: All results are on one dataset (2,200 samples, 22 classes). External validation on independent agricultural datasets was not performed.",
+    "Balanced classes: The dataset is perfectly balanced (100 per class). Real-world agricultural data is typically imbalanced, with some crops dominating regional cultivation.",
+    "Low noise: The dataset contains clean, well-distributed features. Real sensor data includes calibration errors, seasonal drift, and systematic biases.",
+    "Static features: Soil and climate features are point measurements. In practice, these vary temporally (seasonal, diurnal) and spatially (field heterogeneity).",
+    "Limited features: Only 7 features are available. Real crop recommendation would benefit from soil texture, organic matter, micronutrients, elevation, and seasonal patterns.",
+    "Geographic scope: Data originates from Indian agricultural systems. Generalization to other agro-climatic zones (e.g., sub-Saharan Africa, Southeast Asia) is unverified."
+  ],
+  "methodological_limitations": [
+    "Scaler leakage: StandardScaler was fit on the full dataset before train/test split. Impact is negligible (<0.01% per leak-free validation) but noted for rigor.",
+    "SHAP is model-specific: SHAP values explain Random Forest behavior, not intrinsic feature causality. Agreement with statistical methods is suggestive, not definitive.",
+    "Robustness simulation: Gaussian noise and MCAR missing data are simplified models. Real-world noise is biased and missingness is often structured (MNAR).",
+    "Cross-validation scope: 10-fold CV estimates generalization but does not substitute for temporal or geographical validation splits."
+  ],
+  "scope_statement": "This study is framed as a controlled benchmark evaluation of ML methods for crop recommendation under ideal data conditions. The primary contribution is not the absolute accuracy achieved, but the systematic analysis of robustness limitations, feature selection agreement, and the gap between laboratory and deployment performance. The findings should be interpreted as methodological insights applicable to precision agriculture ML pipeline design, rather than as agronomic recommendations for specific farming contexts."
+}

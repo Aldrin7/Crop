@@ -1,0 +1,82 @@
+{
+  "RandomForest": {
+    "train_time_s": 0.32303547859191895,
+    "inference_ms_per_sample": 0.05200867445453448,
+    "inference_ms_total": 22.88381675999517,
+    "model_size_kb": 6468.02734375,
+    "accuracy": 0.9954545454545455,
+    "efficiency_score": 0.04349847131809656
+  },
+  "SVM_RBF": {
+    "train_time_s": 0.11076760292053223,
+    "inference_ms_per_sample": 0.020749657545469414,
+    "inference_ms_total": 9.129849320006542,
+    "model_size_kb": 151.9375,
+    "accuracy": 0.9886363636363636,
+    "efficiency_score": 0.10827430494008583
+  },
+  "KNN": {
+    "train_time_s": 0.001665353775024414,
+    "inference_ms_per_sample": 0.027691966068170423,
+    "inference_ms_total": 12.184465069994985,
+    "model_size_kb": 230.466796875,
+    "accuracy": 0.9818181818181818,
+    "efficiency_score": 0.080572893703973
+  },
+  "DecisionTree": {
+    "train_time_s": 0.006811857223510742,
+    "inference_ms_per_sample": 0.0008541519772816999,
+    "inference_ms_total": 0.375826870003948,
+    "model_size_kb": 17.646484375,
+    "accuracy": 0.9818181818181818,
+    "efficiency_score": 2.6054887800540745
+  },
+  "GradientBoosting": {
+    "train_time_s": 9.045702457427979,
+    "inference_ms_per_sample": 0.049928273909100346,
+    "inference_ms_total": 21.96844052000415,
+    "model_size_kb": 8384.5078125,
+    "accuracy": 0.9863636363636363,
+    "efficiency_score": 0.04489707580243149
+  },
+  "LogisticRegression": {
+    "train_time_s": 0.03292202949523926,
+    "inference_ms_per_sample": 0.000949765886347946,
+    "inference_ms_total": 0.4178969899930962,
+    "model_size_kb": 2.384765625,
+    "accuracy": 0.9727272727272728,
+    "efficiency_score": 2.3221156894522066
+  },
+  "MLP": {
+    "train_time_s": 0.800307035446167,
+    "inference_ms_per_sample": 0.0024432858636332226,
+    "inference_ms_total": 1.075045779998618,
+    "model_size_kb": 292.658203125,
+    "accuracy": 0.990909090909091,
+    "efficiency_score": 0.9208800492766802
+  },
+  "GaussianNB": {
+    "train_time_s": 0.0020499229431152344,
+    "inference_ms_per_sample": 0.002187734636374278,
+    "inference_ms_total": 0.9626032400046824,
+    "model_size_kb": 3.6474609375,
+    "accuracy": 0.9954545454545455,
+    "efficiency_score": 1.0330543777018726
+  },
+  "XGBoost": {
+    "train_time_s": 0.4787132740020752,
+    "inference_ms_per_sample": 0.0186339980454539,
+    "inference_ms_total": 8.198959139999715,
+    "model_size_kb": 3406.10546875,
+    "accuracy": 0.9886363636363636,
+    "efficiency_score": 0.1205660109711715
+  },
+  "LightGBM": {
+    "train_time_s": 0.5449545383453369,
+    "inference_ms_per_sample": 0.07888289749999702,
+    "inference_ms_total": 34.70847489999869,
+    "model_size_kb": 4680.146484375,
+    "accuracy": 0.9886363636363636,
+    "efficiency_score": 0.02848318410130719
+  }
+}

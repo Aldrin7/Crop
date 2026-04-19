@@ -1,0 +1,4 @@
+{
+  "statement": "SHAP values reflect model-specific feature attribution, not intrinsic feature causality or true data-generating importance. TreeExplainer on Random Forest quantifies how much each feature contributes to this particular model's predictions across the test distribution. Agreement with statistical feature selection (Spearman \u03c1=0.679) suggests convergent validity, but the moderate correlation also indicates that the two approaches capture partially distinct aspects of feature relevance. SHAP should be interpreted as 'model behavior explanation' rather than 'ground truth feature importance'.",
+  "implication": "For causal or agronomic claims about feature importance, domain expertise and controlled experiments (e.g., randomized field trials) are required. SHAP analysis here serves as a model interpretability tool, not a substitute for agricultural science."
+}

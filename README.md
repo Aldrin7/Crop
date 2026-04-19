@@ -170,6 +170,7 @@ python3 pipeline.py --session 4   # Evaluation
 python3 pipeline.py --session 5   # Compilation
 python3 pipeline.py --session 6   # Interpretability
 python3 pipeline.py --session 7   # Research Enhancements
+python3 pipeline.py --session 8   # Technical Depth (CV audit, effect sizes, calibration, limitations)
 
 # Skip completed sessions
 python3 pipeline.py --all --skip 5

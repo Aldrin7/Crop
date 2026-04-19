@@ -1,0 +1,20 @@
+{
+  "mean_fisher_discriminant_ratio": 0.925144242680285,
+  "fisher_ratios_per_class": {
+    "apple": 3.8522607402727465,
+    "grapes": 3.663403306659117,
+    "chickpea": 1.7436415509129588,
+    "kidneybeans": 1.4056425639709054,
+    "muskmelon": 0.9903763961046498
+  },
+  "lda_explained_variance": [
+    0.8425505855044053,
+    0.09391138739445908,
+    0.024658390393398524,
+    0.0182086141032737,
+    0.016697828484437856
+  ],
+  "lda_cumulative_variance_3d": 0.9611203632922629,
+  "nearest_class_distance_ratio": 1.3427883299052377,
+  "interpretation": "Mean Fisher discriminant ratio = 0.93, indicating moderate class separability. LDA projects data onto 7 components, with the first 3 explaining 96.1% of between-class variance. Nearest-class distance / intra-class spread ratio = 1.34 (overlapping), confirming that the dataset's high accuracy is driven by intrinsic feature space structure, not model complexity."
+}

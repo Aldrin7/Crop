@@ -1,0 +1,12 @@
+{
+  "scaler_fit": "full_dataset_before_split",
+  "feature_selection": "train_set_only",
+  "leakage_risk": "low",
+  "explanation": "StandardScaler was fit on the full dataset before train/test split. This introduces mild information leakage (scaler statistics include test data). Feature selection was performed on X_train only, which is correct. To quantify the impact, we compare: (A) current pipeline vs (B) fully leak-free Pipeline (scaler fit inside each CV fold).",
+  "leakage_impact": {
+    "current_cv_mean": 0.9954545454545455,
+    "leakfree_cv_mean": 0.9959090909090911,
+    "difference": -0.00045454545454559625,
+    "conclusion": "Leakage impact is 0.0005 (0.05%), negligible. This confirms that on this clean, balanced dataset, scaler leakage has minimal effect. For rigorous reporting, we note this limitation and recommend leak-free pipelines for future work on noisier datasets."
+  }
+}

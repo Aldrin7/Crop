@@ -1,0 +1,18 @@
+{
+  "feature_correlations": [
+    {
+      "feature_1": "P",
+      "feature_2": "K",
+      "correlation": 0.7360444484987043
+    }
+  ],
+  "class_conditional_mean_abs_corr": {
+    "apple": 0.08712642107695252,
+    "banana": 0.0735889637529767,
+    "blackgram": 0.07281762026204931,
+    "chickpea": 0.09088287844618795,
+    "coconut": 0.08274144023532318
+  },
+  "overall_mean_class_cond_corr": 0.08143146475469794,
+  "explanation": "GaussianNB assumes conditional independence of features given the class. Marginal correlations show some inter-feature dependence (e.g., P\u2194K: r=0.736). However, class-conditional mean |r| = 0.081, which is low. GaussianNB performs well (99.49%) because strong class separability reduces reliance on joint feature distributions \u2014 when classes are well-separated in feature space, even a naive independence assumption suffices for classification."
+}

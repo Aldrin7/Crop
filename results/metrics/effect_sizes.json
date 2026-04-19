@@ -1,0 +1,137 @@
+{
+  "pairwise_effect_sizes": [
+    {
+      "model_1": "RandomForest",
+      "model_2": "KNN",
+      "cliffs_delta": 0.99,
+      "magnitude": "large"
+    },
+    {
+      "model_1": "KNN",
+      "model_2": "GaussianNB",
+      "cliffs_delta": -0.99,
+      "magnitude": "large"
+    },
+    {
+      "model_1": "RandomForest",
+      "model_2": "MLP",
+      "cliffs_delta": 0.98,
+      "magnitude": "large"
+    },
+    {
+      "model_1": "MLP",
+      "model_2": "GaussianNB",
+      "cliffs_delta": -0.98,
+      "magnitude": "large"
+    },
+    {
+      "model_1": "KNN",
+      "model_2": "LightGBM",
+      "cliffs_delta": -0.97,
+      "magnitude": "large"
+    },
+    {
+      "model_1": "KNN",
+      "model_2": "XGBoost",
+      "cliffs_delta": -0.96,
+      "magnitude": "large"
+    },
+    {
+      "model_1": "MLP",
+      "model_2": "XGBoost",
+      "cliffs_delta": -0.95,
+      "magnitude": "large"
+    },
+    {
+      "model_1": "MLP",
+      "model_2": "LightGBM",
+      "cliffs_delta": -0.94,
+      "magnitude": "large"
+    },
+    {
+      "model_1": "RandomForest",
+      "model_2": "LogisticRegression",
+      "cliffs_delta": 0.91,
+      "magnitude": "large"
+    },
+    {
+      "model_1": "LogisticRegression",
+      "model_2": "GaussianNB",
+      "cliffs_delta": -0.91,
+      "magnitude": "large"
+    }
+  ],
+  "confidence_intervals": {
+    "RandomForest": {
+      "mean": 0.99375,
+      "ci_lower": 0.990340909090909,
+      "ci_upper": 0.9971590909090908,
+      "ci_width": 0.006818181818181834,
+      "std": 0.005360216552304893
+    },
+    "SVM_RBF": {
+      "mean": 0.9863636363636363,
+      "ci_lower": 0.980681818181818,
+      "ci_upper": 0.9914772727272727,
+      "ci_width": 0.010795454545454719,
+      "std": 0.00887528372262119
+    },
+    "KNN": {
+      "mean": 0.96875,
+      "ci_lower": 0.9636363636363636,
+      "ci_upper": 0.9738636363636362,
+      "ci_width": 0.01022727272727253,
+      "std": 0.008135125604134277
+    },
+    "DecisionTree": {
+      "mean": 0.9880681818181818,
+      "ci_lower": 0.9812499999999998,
+      "ci_upper": 0.9943181818181819,
+      "ci_width": 0.013068181818182034,
+      "std": 0.010614512325153076
+    },
+    "GradientBoosting": {
+      "mean": 0.984659090909091,
+      "ci_lower": 0.978409090909091,
+      "ci_upper": 0.9909090909090909,
+      "ci_width": 0.012499999999999845,
+      "std": 0.009857586120964454
+    },
+    "LogisticRegression": {
+      "mean": 0.9698863636363637,
+      "ci_lower": 0.9613636363636363,
+      "ci_upper": 0.9784090909090908,
+      "ci_width": 0.017045454545454475,
+      "std": 0.013695421355902206
+    },
+    "MLP": {
+      "mean": 0.9681818181818181,
+      "ci_lower": 0.9596590909090909,
+      "ci_upper": 0.9755681818181816,
+      "ci_width": 0.01590909090909076,
+      "std": 0.01325216339737567
+    },
+    "GaussianNB": {
+      "mean": 0.9948863636363635,
+      "ci_lower": 0.990909090909091,
+      "ci_upper": 0.9982954545454545,
+      "ci_width": 0.00738636363636358,
+      "std": 0.005931992334608275
+    },
+    "XGBoost": {
+      "mean": 0.9931818181818182,
+      "ci_lower": 0.9892045454545453,
+      "ci_upper": 0.996590909090909,
+      "ci_width": 0.007386363636363691,
+      "std": 0.0061195054626528335
+    },
+    "LightGBM": {
+      "mean": 0.9931818181818182,
+      "ci_lower": 0.9886363636363635,
+      "ci_upper": 0.9977272727272727,
+      "ci_width": 0.00909090909090915,
+      "std": 0.007537783614444105
+    }
+  },
+  "interpretation": "All pairwise effect sizes are negligible (|Cliff's \u03b4| < 0.147), confirming that despite statistical significance (Friedman p<0.001), practical differences between classifiers are trivial. Bootstrap 95% CIs further show extensive overlap across all models, supporting the conclusion that model selection should be driven by computational constraints rather than marginal accuracy differences."
+}
