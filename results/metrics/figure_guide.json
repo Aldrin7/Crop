@@ -10,19 +10,19 @@
     },
     {
       "file": "09_feature_selection_comparison",
-      "caption": "Feature selection methods comparison across 6 algorithms"
+      "caption": "Feature selection methods comparison across 6 algorithms with consensus ranking"
     },
     {
       "file": "11_model_comparison",
-      "caption": "Classifier accuracy and F1-score across feature subsets"
+      "caption": "Classifier accuracy and F1-score across 4 feature subsets"
     },
     {
       "file": "12_confusion_matrices",
-      "caption": "Normalized confusion matrices for all classifiers"
+      "caption": "Normalized confusion matrices for all 10 classifiers"
     },
     {
       "file": "13_roc_RandomForest",
-      "caption": "ROC curves for best classifier (Random Forest)"
+      "caption": "ROC curves (micro/macro/per-class) for best classifier (Random Forest)"
     },
     {
       "file": "18_ablation_study",
@@ -34,11 +34,19 @@
     },
     {
       "file": "24_critical_difference_diagram",
-      "caption": "Nemenyi post-hoc critical difference diagram"
+      "caption": "Nemenyi post-hoc critical difference diagram (CD=4.284, α=0.05)"
     },
     {
-      "file": "25_publication_overview",
-      "caption": "Combined methodology and results overview"
+      "file": "26_shap_vs_fs_correlation",
+      "caption": "SHAP vs feature selection agreement: Spearman ρ=0.679 correlation and rank comparison"
+    },
+    {
+      "file": "27_error_analysis",
+      "caption": "Per-crop error analysis: F1 scores and top misclassification pairs with agronomic reasoning"
+    },
+    {
+      "file": "28_robustness_threshold",
+      "caption": "Robustness threshold analysis with reliability zones (critical σ=0.5 boundary)"
     }
   ],
   "supplementary": [
@@ -55,6 +63,10 @@
     "17_comprehensive_performance",
     "19_sensitivity_rf",
     "20_shap_importance",
-    "23_missing_value_robustness"
+    "21_shap_beeswarm_apple",
+    "21_shap_beeswarm_coffee",
+    "23_missing_value_robustness",
+    "25_publication_overview",
+    "29_classifier_families"
   ]
 }
