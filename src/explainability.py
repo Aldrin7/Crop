@@ -17,19 +17,32 @@ def compute_shap_values(model, X_train, X_test, feature_names=None):
                        'DecisionTree', 'ExtraTrees')
         model_type = type(model).__name__
         if any(t in model_type for t in tree_models) or hasattr(model, 'estimators_'):
-            explainer = shap.TreeExplainer(model)
-            shap_values = explainer.shap_values(X_test)
-            log.info(f"SHAP TreeExplainer used for {model_type}")
-        else:
-            # KernelExplainer with subsample for speed
-            bg = shap.kmeans(X_train, min(50, len(X_train)))
-            explainer = shap.KernelExplainer(model.predict_proba, bg)
-            shap_values = explainer.shap_values(X_test[:100])
-            log.info(f"SHAP KernelExplainer used for {model_type}")
+            try:
+                explainer = shap.TreeExplainer(model)
+                shap_values = explainer.shap_values(X_test)
+                log.info(f"SHAP TreeExplainer used for {model_type}")
+                return shap_values, explainer
+            except Exception as e:
+                log.warning(f"  TreeExplainer failed ({e}), falling back to KernelExplainer")
+        
+        # KernelExplainer with subsample for speed
+        bg = shap.kmeans(X_train, min(50, len(X_train)))
+        # LightGBM fix: remove feature_names_in_ before creating explainer
+        try:
+            if hasattr(model, 'feature_names_in_'):
+                try:
+                    model.feature_names_in_ = None
+                except (AttributeError, TypeError):
+                    pass  # read-only property, continue anyway
+        except:
+            pass
+        explainer = shap.KernelExplainer(model.predict_proba, bg)
+        shap_values = explainer.shap_values(X_test[:100])
+        log.info(f"SHAP KernelExplainer used for {model_type}")
         return shap_values, explainer
-    except ImportError:
-        log.warning("SHAP not installed — using permutation importance fallback")
-        return _permutation_fallback(model, X_test, feature_names)
+    except Exception as e:
+        log.warning(f"SHAP failed entirely: {e}")
+        return None, None
 
 def _permutation_fallback(model, X_test, feature_names):
     """Fallback: permutation importance when SHAP unavailable."""

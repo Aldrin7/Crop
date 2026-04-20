@@ -187,10 +187,18 @@ def session1():
     fig, axes = plt.subplots(2, 2, figsize=(14, 10))
     for i, feat in enumerate(shared_feats):
         ax = axes[i // 2, i % 2]
-        sec_feat = 'ph' if feat == 'ph' else feat
+        # Map 'ph' → 'pH' for secondary; also try exact + variants
+        sec_candidates = [feat, feat.upper(), feat.lower(), feat.capitalize(), 'pH', 'PH']
+        sec_feat = None
+        for cand in sec_candidates:
+            if cand in df_secondary.columns:
+                sec_feat = cand
+                break
+        if sec_feat is None:
+            continue  # skip if no matching column
         ax.hist(df_primary[feat].dropna(), bins=40, alpha=0.5, density=True,
                 label='Primary', color='steelblue')
-        ax.hist(df_secondary[sec_feat if sec_feat in df_secondary.columns else feat].dropna(),
+        ax.hist(df_secondary[sec_feat].dropna(),
                 bins=40, alpha=0.5, density=True, label='Secondary (Real)', color='#E91E63')
         ax.set_title(f'{feat} — Distribution Comparison', fontweight='bold')
         ax.legend(); ax.grid(True, alpha=0.3)
@@ -247,7 +255,7 @@ def session2():
     log.info("\nPreprocessing secondary (REAL) dataset...")
 
     # Handle missing values first
-    df_sec_clean = handle_missing(df_secondary.copy())
+    df_sec_clean = handle_missing(df_secondary.copy(), feature_cols=SECONDARY_FEATURES)
     prep_secondary = prepare_data(df_sec_clean, target_col=SECONDARY_TARGET,
                                    feature_cols=SECONDARY_FEATURES)
     log.info(f"Secondary preprocessing: {prep_secondary['outlier_report']}")
@@ -553,11 +561,21 @@ def session4():
         shap_vals, _ = compute_shap_values(model, X_train.values, X_test.values, FEATURES)
         if shap_vals is not None:
             try:
+                # Handle various SHAP output shapes
                 if isinstance(shap_vals, list):
+                    # Multi-class: list of arrays (n_samples, n_features) per class
                     mean_shap = np.mean([np.abs(sv).mean(axis=0) for sv in shap_vals], axis=0)
-                else:
+                elif shap_vals.ndim == 3:
+                    # Shape: (n_samples, n_features, n_classes)
+                    mean_shap = np.abs(shap_vals).mean(axis=(0, 2))
+                elif shap_vals.ndim == 2:
+                    # Shape: (n_samples, n_features)
                     mean_shap = np.abs(shap_vals).mean(axis=0)
-                feat_imp = pd.DataFrame({'feature': FEATURES, 'mean_|SHAP|': mean_shap}
+                else:
+                    log.warning(f"  Unexpected SHAP shape: {shap_vals.shape}")
+                    continue
+                mean_shap = np.atleast_1d(mean_shap).flatten()[:len(FEATURES)]
+                feat_imp = pd.DataFrame({'feature': FEATURES[:len(mean_shap)], 'mean_|SHAP|': mean_shap}
                                         ).sort_values('mean_|SHAP|')
                 fig, ax = plt.subplots(figsize=(10, 6))
                 ax.barh(feat_imp['feature'], feat_imp['mean_|SHAP|'], color='#E91E63')
@@ -565,7 +583,7 @@ def session4():
                 ax.set_title(f'SHAP — {clf_name}', fontweight='bold')
                 fig.tight_layout(); save_fig(fig, f'11_shap_{clf_name}')
             except Exception as e:
-                log.warning(f"  SHAP plot failed: {e}")
+                log.warning(f"  SHAP plot failed for {clf_name}: {e}")
 
     # ── 4.2 GaussianNB Calibration ────────────────────────────────────────
     log.info("\nPhase 4.2: GaussianNB Calibration & Independence Violation")

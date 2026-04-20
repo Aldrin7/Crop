@@ -1,0 +1,117 @@
+{
+  "session": 1,
+  "primary": {
+    "n_samples": 2200,
+    "n_features": 7,
+    "n_classes": 22,
+    "features": [
+      "N",
+      "P",
+      "K",
+      "temperature",
+      "humidity",
+      "ph",
+      "rainfall"
+    ],
+    "classes": [
+      "apple",
+      "banana",
+      "blackgram",
+      "chickpea",
+      "coconut",
+      "coffee",
+      "cotton",
+      "grapes",
+      "jute",
+      "kidneybeans",
+      "lentil",
+      "maize",
+      "mango",
+      "mothbeans",
+      "mungbean",
+      "muskmelon",
+      "orange",
+      "papaya",
+      "pigeonpeas",
+      "pomegranate",
+      "rice",
+      "watermelon"
+    ],
+    "class_counts": {
+      "rice": 100,
+      "maize": 100,
+      "chickpea": 100,
+      "kidneybeans": 100,
+      "pigeonpeas": 100,
+      "mothbeans": 100,
+      "mungbean": 100,
+      "blackgram": 100,
+      "lentil": 100,
+      "pomegranate": 100,
+      "banana": 100,
+      "mango": 100,
+      "grapes": 100,
+      "watermelon": 100,
+      "muskmelon": 100,
+      "apple": 100,
+      "orange": 100,
+      "papaya": 100,
+      "coconut": 100,
+      "cotton": 100,
+      "jute": 100,
+      "coffee": 100
+    },
+    "missing": 0,
+    "duplicates": 0,
+    "is_balanced": true,
+    "min_class": 100,
+    "max_class": 100,
+    "imbalance_ratio": 1.0
+  },
+  "secondary": {
+    "n_samples": 880,
+    "n_features": 12,
+    "n_classes": 3,
+    "features": [
+      "N",
+      "P",
+      "K",
+      "pH",
+      "EC",
+      "OC",
+      "S",
+      "Zn",
+      "Fe",
+      "Cu",
+      "Mn",
+      "B"
+    ],
+    "classes": [
+      0,
+      1,
+      2
+    ],
+    "class_counts": {
+      "1": 440,
+      "0": 401,
+      "2": 39
+    },
+    "missing": 0,
+    "duplicates": 0,
+    "is_balanced": false,
+    "min_class": 39,
+    "max_class": 440,
+    "imbalance_ratio": 11.28
+  },
+  "shared_features": [
+    "N",
+    "P",
+    "K",
+    "ph"
+  ],
+  "degradation_variants": [
+    "mild",
+    "moderate",
+    "severe"
+  ]
+}

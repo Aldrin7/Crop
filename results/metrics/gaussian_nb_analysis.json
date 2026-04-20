@@ -1,0 +1,41 @@
+{
+  "violation_explanation": "GaussianNB assumes conditional independence. The feature correlation heatmap shows moderate correlations (e.g., K-P correlation). However, Naive Bayes only requires the RANKING of class probabilities to be correct (argmax), not the actual probability values. When classes are well-separated in feature space, NB pushes posteriors to 0/1 extremes, maintaining accuracy while destroying calibration (high Brier score).",
+  "conditional_independence_violated": true,
+  "accuracy_preserved": true,
+  "calibration_poor": false,
+  "brier_scores": [
+    1.01903287646496e-34,
+    5.501721357227809e-15,
+    2.8394673377001812e-06,
+    5.804591326175282e-141,
+    8.093991660841484e-15,
+    3.5048545856585557e-09,
+    0.0005103863522131659,
+    1.1205410585525735e-34,
+    0.003158340389491535,
+    4.0711411433509115e-07,
+    0.00046894660230047347,
+    0.0005117752675904047,
+    7.966957765501419e-11,
+    0.0005674340133968014,
+    9.467550227600774e-11,
+    3.300936620477587e-15,
+    9.350652462841185e-16,
+    3.2884303449036623e-15,
+    0.0001075498614135256,
+    6.746820683463841e-15,
+    0.0031583393435054,
+    3.300911081042365e-15
+  ],
+  "brier_mean": 0.0003857282768451898,
+  "max_posterior_mean": 0.9928705929666032,
+  "prediction_confidence": "Overconfident (posteriors near 0/1)",
+  "correlation_violations": [
+    {
+      "feature_1": "P",
+      "feature_2": "K",
+      "abs_correlation": 0.736,
+      "severity": "high"
+    }
+  ]
+}

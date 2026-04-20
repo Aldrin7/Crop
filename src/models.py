@@ -40,8 +40,7 @@ def get_optional_classifiers():
         import xgboost as xgb
         extras['XGBoost'] = xgb.XGBClassifier(
             n_estimators=200, max_depth=6, learning_rate=0.1,
-            random_state=RANDOM_STATE, n_jobs=-1, eval_metric='mlogloss',
-            use_label_encoder=False)
+            random_state=RANDOM_STATE, n_jobs=-1, eval_metric='mlogloss')
     except ImportError:
         pass
     try:
