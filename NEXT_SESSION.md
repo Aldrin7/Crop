@@ -1,67 +1,111 @@
-# NEXT SESSION TASKLIST
+# NEXT SESSION TASKLIST — v3.0 (Dual Dataset)
 
-## Completed (Sessions 1-2) ✅
-- [x] Session 1: Data acquisition, EDA, 6 figures, 3 degradation variants (mild/moderate/severe)
-- [x] Session 2: Preprocessing, outlier detection, descriptive FS (6 methods + consensus)
-- [x] Partial Session 3: Nested CV started (all_7 subset mostly done, top_5 in progress)
+## What Changed (v2 → v3)
+- ✅ **Real secondary dataset integrated** (Soil Fertility, 880 samples, real lab measurements)
+- ✅ **Cross-dataset validation** on shared features (N, P, K, pH)
+- ✅ **README restructured** — SCI/Scopus journals only
+- ✅ **Pipeline restructured** — both datasets processed in parallel
+- ✅ **Target journals** — no predatory, only SCI/Scopus indexed
+
+## Completed (Sessions 1-2 from v2) ✅
+- [x] Session 1: Data acquisition, EDA (primary dataset)
+- [x] Session 2: Preprocessing, descriptive FS (primary dataset)
 
 ## Pending — Run in Order
 
-### Step 1: Finish Session 3 (Nested CV Training) — ~20 min
+### Step 1: Clear old checkpoints (fresh start for v3)
 ```bash
-cd Crop-Research-v2
+cd Crop-Research
+rm -f data/checkpoints/*.pkl data/checkpoints/*.done
+rm -rf results/figures/* results/tables/* results/metrics/*
+```
+
+### Step 2: Run Session 1 (Data & EDA — BOTH datasets) — ~15 min
+```bash
+python3 pipeline.py --session 1
+```
+- Downloads/loads both primary + secondary datasets
+- EDA for both: distributions, correlations, class balance
+- Shared feature space analysis
+- Degradation variants
+- **Outputs:** 7 figures, descriptive stats tables
+- **Verify:** `results/figures/07_shared_features_comparison.png` exists
+
+### Step 3: Run Session 2 (Preprocessing + FS) — ~15 min
+```bash
+python3 pipeline.py --session 2
+```
+- Preprocesses both datasets (missing handling for secondary)
+- 6 FS methods on each dataset + consensus ranking
+- Cross-dataset FS consistency analysis
+- **Outputs:** `08_feature_selection.png`, `09_feature_selection_secondary.png`, FS tables
+- **Verify:** `results/tables/cross_dataset_fs_consistency.csv` exists
+
+### Step 4: Run Session 3 (Nested CV Training) — ~25 min
+```bash
 python3 pipeline.py --session 3
 ```
-- Runs leak-free nested CV (5-fold outer × 8-10 classifiers × 4 feature subsets)
-- Checkpoint saved as `data/checkpoints/s3.pkl`
-- If it hangs: delete `data/checkpoints/s3.pkl` and re-run
-- **Verify:** check `results/tables/nested_cv_results.csv` exists with ~32-40 rows
+- Leak-free nested CV on primary (all_7, top_5, top_4, top_3)
+- Leak-free nested CV on secondary (sec_all_12, sec_top_6, sec_top_4)
+- 10 classifiers × 7 feature subsets = ~70 training runs
+- **Checkpoint:** `data/checkpoints/s3.pkl`
+- **Verify:** `results/tables/nested_cv_results.csv` with ~60+ rows
 
-### Step 2: Run Session 4 (SHAP + Calibration + Robustness) — ~15 min
+### Step 5: Run Session 4 (SHAP + Calibration + Cross-Dataset) — ~15 min
 ```bash
 python3 pipeline.py --session 4
 ```
 - SHAP TreeExplainer for top 3 classifiers
-- GaussianNB calibration analysis (Brier score, independence violations)
-- Robustness under sensor degradation (fresh/mild/moderate/severe)
-- Calibration curves for top 3
-- Per-class F1 heatmap across all classifiers
-- **Outputs:** `08_shap_*.png`, `09_robustness.png`, `10_calibration.png`, `11_per_class_heatmap.png`
+- GaussianNB calibration analysis
+- Robustness under sensor degradation
+- Calibration curves
+- Per-class F1 heatmap
+- Cross-dataset feature consistency validation
+- **Outputs:** `11_shap_*.png`, `12_robustness.png`, `13_calibration.png`, `14_per_class_heatmap.png`
 
-### Step 3: Run Session 5 (Paper Artifacts) — ~5 min
+### Step 6: Run Session 5 (Paper Artifacts) — ~5 min
 ```bash
 python3 pipeline.py --session 5
 ```
 - Master results table (LaTeX-ready)
-- Ablation study figure
-- Consensus feature ranking table
 - Final summary JSON
-- **Verify:** check `results/tables/master_results.csv` and `results/metrics/final_summary.json`
+- **Verify:** `results/tables/master_results.csv` and `results/metrics/final_summary.json`
 
-### Step 4: Push Results to GitHub
+### Step 7: Push to GitHub
 ```bash
-cd Crop-Research-v2
-git add -A && git commit -m "Sessions 3-5 complete — nested CV, SHAP, calibration, paper artifacts"
+cd Crop-Research
+git add -A
+git commit -m "v3.0: Dual-dataset pipeline with real secondary + SCI/Scopus journals"
 git push origin main
 ```
 
-### Step 5 (Optional): Fix Multi-Class SHAP Plot
-- Session 4 SHAP may fail on multi-class models (list of arrays vs single array)
-- If so, fix in `src/explainability.py` line ~40 — handle `shap_values` as list properly
-- Quick fix: `mean_shap = np.mean([np.abs(sv).mean(axis=0) for sv in shap_vals], axis=0)`
-
-### Step 6 (Optional): Write Paper Draft
+### Step 8 (Optional): Write Paper Draft
 - Use `results/metrics/final_summary.json` for abstract/methods
-- Use `results/tables/master_results.csv` for results section
-- Use figures 01-11 for all illustrations
-- Target: Heliyon (free APC, SCI indexed)
+- Use `results/tables/master_results.csv` for results
+- Figures 01-14 for illustrations
+- Cross-dataset validation strengthens generalisation claims
+- **Target:** Computers and Electronics in Agriculture (SCI, IF 8.3)
 
-## Key Peer Review Fixes Already Implemented
-| Critique | Fix | Status |
-|----------|-----|--------|
-| 2.1 Semi-synthetic dataset | Acknowledged + degradation variants | ✅ |
-| 2.2 FS data leakage | FS inside CV loop | ✅ |
-| 2.3 Sensor degradation | Literature-grounded (Rana 2019, Lobnik 2011) | ✅ |
-| 3.1 Monolithic code | Modular src/*.py | ✅ |
-| 3.2 Redundant metrics | Kappa, MCC, Brier, ECE | ✅ |
-| 3.3 Interpretability | SHAP + NB calibration analysis | ⏳ (Session 4) |
+---
+
+## Key Advantages of v3.0
+
+| Aspect | v2.0 | v3.0 |
+|--------|------|------|
+| Datasets | 1 (semi-synthetic) | 2 (semi-synthetic + **real**) |
+| Validation | Single-dataset CV | **Cross-dataset** generalisation |
+| Real-world | Sensor noise only | Real lab data + noise |
+| Class balance | Perfect (synthetic) | **Natural imbalance** (real) |
+| Missing values | Injected | **Actual** lab dropout |
+| Journal targets | Mixed | **SCI/Scopus only** |
+
+## If Session 3 Hangs
+- Delete `data/checkpoints/s3.pkl` and re-run
+- Secondary dataset training is faster (fewer classes)
+- Primary ~15 min, Secondary ~10 min
+
+## If SHAP Fails (Multi-class)
+Fix in `src/explainability.py` — handle `shap_values` as list:
+```python
+mean_shap = np.mean([np.abs(sv).mean(axis=0) for sv in shap_vals], axis=0)
+```

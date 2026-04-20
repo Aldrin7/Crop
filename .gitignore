@@ -7,3 +7,6 @@ models/*.pkl
 models/*.joblib
 logs/*.log
 .DS_Store
+venv/
+*.zip
+secondary_temp/

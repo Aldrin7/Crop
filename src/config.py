@@ -18,8 +18,23 @@ RANDOM_STATE = 42
 TEST_SIZE = 0.2
 CV_OUTER = 5          # outer fold — unbiased generalisation estimate
 CV_INNER = 3          # inner fold — FS + hyper-parameter tuning
+
+# ── Primary dataset (Crop Recommendation) ─────────────────────────────────────
 FEATURES = ['N', 'P', 'K', 'temperature', 'humidity', 'ph', 'rainfall']
 TARGET = 'label'
+N_CLASSES_PRIMARY = 22
+
+# ── Secondary dataset (Soil Fertility — real lab measurements) ────────────────
+SECONDARY_FILE = 'soil_fertility_secondary.csv'
+SECONDARY_FEATURES = ['N', 'P', 'K', 'pH', 'EC', 'OC', 'S', 'Zn', 'Fe', 'Cu', 'Mn', 'B']
+SECONDARY_TARGET = 'Output'
+SHARED_FEATURES = ['N', 'P', 'K']  # features present in both datasets (pH vs ph = close match)
+SECONDARY_SOURCE = (
+    "Rahul Jaiswal (Kaggle). Real soil laboratory test results from Indian "
+    "agricultural testing centres. 880 samples, 12 physicochemical features, "
+    "3 fertility classes (0=High, 1=Medium, 2=Low). Natural class imbalance "
+    "reflects real-world soil fertility distribution."
+)
 
 # ── Sensor degradation — literature-grounded ───────────────────────────────────
 # Sources:
