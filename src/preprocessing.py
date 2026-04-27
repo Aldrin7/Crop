@@ -73,6 +73,7 @@ def prepare_data(df, scaler_name='StandardScaler', test_size=TEST_SIZE,
                                                    feature_cols=feature_cols)
     return {
         'X_train': X_train_s, 'X_test': X_test_s,
+        'X_train_raw': X_train, 'X_test_raw': X_test,  # unscaled — for leak-free pipeline
         'y_train': y_train, 'y_test': y_test,
         'label_encoder': le, 'scaler': scaler,
         'outlier_report': outliers,

@@ -213,7 +213,8 @@ def session1():
         'primary_shared': primary_shared,
         'secondary_shared': secondary_shared,
         'shared_features': shared_feats,
-        'variants': variants,
+        'variants': variants,          # raw degraded DataFrames (for leak-free pipeline)
+        'variants_raw': variants,      # alias: unscaled degraded data
         'summary_primary': summary_primary,
         'summary_secondary': summary_secondary,
     }
@@ -370,90 +371,117 @@ def session3():
     if s2 is None:
         raise RuntimeError("Run session 2 first")
 
-    from sklearn.model_selection import StratifiedKFold
     from sklearn.base import clone
+    from sklearn.pipeline import Pipeline
+    from sklearn.preprocessing import StandardScaler
+    from sklearn.feature_selection import SelectKBest, mutual_info_classif
 
     classifiers = all_classifiers()
     all_results = {}
     best_models = {}
 
-    # ── 3.1 PRIMARY dataset training ──────────────────────────────────────
+    # ── 3.1 PRIMARY dataset training (LEAK-FREE: FS inside CV via Pipeline) ──
     prep = s2['prep_primary']
-    X = pd.concat([prep['X_train'], prep['X_test']])
+    X_raw = pd.concat([prep['X_train_raw'], prep['X_test_raw']])  # unscaled
     y = np.concatenate([prep['y_train'], prep['y_test']])
-    consensus = s2['consensus']
 
-    top_feats = consensus.sort_values('mean_score', ascending=False)['feature'].tolist()
-    feature_subsets = {
-        'all_7': FEATURES,
-        'top_5': top_feats[:5],
-        'top_4': top_feats[:4],
-        'top_3': top_feats[:3],
+    # Ablation: MI-based top-k selection PER FOLD (no global pre-selection)
+    primary_k_subsets = {
+        'all_7': None,   # no selection — use all 7 features
+        'mi_top_5': 5,
+        'mi_top_4': 4,
+        'mi_top_3': 3,
     }
 
-    log.info("═══ PRIMARY DATASET ═══")
-    for subset_name, subset_feats in feature_subsets.items():
-        log.info(f"\n{'='*40}\nFeature subset: {subset_name} ({len(subset_feats)} feats)\n{'='*40}")
-        feat_idx = [FEATURES.index(f) for f in subset_feats]
-        X_sub = X.iloc[:, feat_idx]
-        _train_classifiers(X_sub, y, classifiers, subset_name,
-                           all_results, best_models, le=prep['label_encoder'])
+    log.info("═══ PRIMARY DATASET (leak-free: MI selection per fold) ═══")
+    for subset_name, k in primary_k_subsets.items():
+        log.info(f"\n{'='*40}\nFeature subset: {subset_name} (k={k or 'all'})\n{'='*40}")
+        _train_classifiers(X_raw, y, classifiers, subset_name,
+                           all_results, best_models, le=prep['label_encoder'],
+                           feature_cols=FEATURES, k=k)
 
-    # ── 3.2 SECONDARY dataset training ────────────────────────────────────
-    log.info("\n═══ SECONDARY DATASET (REAL) ═══")
+    # ── 3.2 SECONDARY dataset training (LEAK-FREE) ─────────────────────────
+    log.info("\n═══ SECONDARY DATASET (REAL, leak-free) ═══")
     prep_s = s2['prep_secondary']
-    X_sec = pd.concat([prep_s['X_train'], prep_s['X_test']])
+    X_sec_raw = pd.concat([prep_s['X_train_raw'], prep_s['X_test_raw']])  # unscaled
     y_sec = np.concatenate([prep_s['y_train'], prep_s['y_test']])
 
-    consensus_s = s2['consensus_secondary']
-    top_feats_s = consensus_s.sort_values('mean_score', ascending=False)['feature'].tolist()
-    secondary_subsets = {
-        'sec_all_12': SECONDARY_FEATURES,
-        'sec_top_6': top_feats_s[:6],
-        'sec_top_4': top_feats_s[:4],
+    secondary_k_subsets = {
+        'sec_all_12': None,
+        'sec_mi_top_6': 6,
+        'sec_mi_top_4': 4,
     }
 
-    for subset_name, subset_feats in secondary_subsets.items():
-        log.info(f"\n{'='*40}\nFeature subset: {subset_name} ({len(subset_feats)} feats)\n{'='*40}")
-        feat_idx = [SECONDARY_FEATURES.index(f) for f in subset_feats]
-        X_sub = X_sec.iloc[:, feat_idx]
-        _train_classifiers(X_sub, y_sec, classifiers, subset_name,
-                           all_results, best_models, le=prep_s['label_encoder'])
+    for subset_name, k in secondary_k_subsets.items():
+        log.info(f"\n{'='*40}\nFeature subset: {subset_name} (k={k or 'all'})\n{'='*40}")
+        _train_classifiers(X_sec_raw, y_sec, classifiers, subset_name,
+                           all_results, best_models, le=prep_s['label_encoder'],
+                           feature_cols=SECONDARY_FEATURES, k=k)
 
     # ── Summary ───────────────────────────────────────────────────────────
+    all_k_subsets = {**primary_k_subsets, **secondary_k_subsets}
     save_ckpt('s3', {'all_results': all_results, 'best_models': best_models,
-                     'feature_subsets': {**feature_subsets, **secondary_subsets}})
+                     'feature_subsets': {k: f'mi_top_{v}' if v else 'all' for k, v in all_k_subsets.items()}})
 
     _save_training_summary(all_results)
     mark_done(3)
     log.info("SESSION 3 COMPLETE ✓")
 
 
-def _train_classifiers(X_sub, y, classifiers, subset_name, all_results, best_models, le=None):
-    """Train all classifiers with nested CV on a given feature subset."""
+def _train_classifiers(X_raw, y, classifiers, subset_name, all_results, best_models,
+                       le=None, feature_cols=None, k=None):
+    """Train all classifiers with LEAK-FREE CV: scaler + feature selection inside each fold.
+
+    Args:
+        X_raw: Unscaled feature DataFrame/array (scaling done per-fold via Pipeline).
+        y: Target labels.
+        classifiers: Dict of {name: estimator}.
+        subset_name: Label for this ablation run (e.g. 'all_7', 'mi_top_5').
+        all_results: Mutable dict to accumulate results.
+        best_models: Mutable dict to store fitted models.
+        le: Label encoder (for reporting).
+        feature_cols: Column names for the full feature set.
+        k: If set, use SelectKBest(mutual_info) to pick top-k features per fold.
+            If None, use all features (no selection inside CV).
+    """
     from sklearn.model_selection import StratifiedKFold
     from sklearn.base import clone
+    from sklearn.pipeline import Pipeline
+    from sklearn.preprocessing import StandardScaler
+    from sklearn.feature_selection import SelectKBest, mutual_info_classif
+
+    n_total = X_raw.shape[1]
+    if k is None or k >= n_total:
+        k_eff = n_total  # no selection
+    else:
+        k_eff = k
 
     subset_results = {}
     for clf_name, clf in classifiers.items():
-        log.info(f"  Training {clf_name}...")
+        log.info(f"  Training {clf_name} (k={k_eff}/{n_total})...")
         t0 = time.time()
         try:
-            clf_clone = clone(clf)
+            # Build leak-free pipeline: scaler → feature selection → classifier
+            steps = [('scaler', StandardScaler())]
+            if k_eff < n_total:
+                steps.append(('selector', SelectKBest(mutual_info_classif, k=k_eff)))
+            steps.append(('clf', clone(clf)))
+            pipe = Pipeline(steps)
+
             outer_cv = StratifiedKFold(n_splits=CV_OUTER, shuffle=True,
                                        random_state=RANDOM_STATE)
             outer_scores, fold_metrics = [], []
 
-            for fold, (train_idx, test_idx) in enumerate(outer_cv.split(X_sub, y)):
-                X_tr = X_sub.iloc[train_idx] if hasattr(X_sub, 'iloc') else X_sub[train_idx]
-                X_te = X_sub.iloc[test_idx] if hasattr(X_sub, 'iloc') else X_sub[test_idx]
+            for fold, (train_idx, test_idx) in enumerate(outer_cv.split(X_raw, y)):
+                X_tr = X_raw.iloc[train_idx] if hasattr(X_raw, 'iloc') else X_raw[train_idx]
+                X_te = X_raw.iloc[test_idx] if hasattr(X_raw, 'iloc') else X_raw[test_idx]
                 y_tr, y_te = y[train_idx], y[test_idx]
 
-                model = clone(clf_clone)
-                model.fit(X_tr, y_tr)
-                y_pred = model.predict(X_te)
-                y_proba = (model.predict_proba(X_te)
-                           if hasattr(model, 'predict_proba') else None)
+                fold_pipe = clone(pipe)
+                fold_pipe.fit(X_tr, y_tr)
+                y_pred = fold_pipe.predict(X_te)
+                y_proba = (fold_pipe.predict_proba(X_te)
+                           if hasattr(fold_pipe, 'predict_proba') else None)
 
                 m = compute_metrics(y_te, y_pred, y_proba)
                 fold_metrics.append(m)
@@ -471,14 +499,15 @@ def _train_classifiers(X_sub, y, classifiers, subset_name, all_results, best_mod
                 'ece': float(np.mean([f.get('ece', 0) for f in fold_metrics])),
                 'train_time': elapsed,
                 'subset': subset_name,
-                'n_features': len(X_sub.columns) if hasattr(X_sub, 'columns') else X_sub.shape[1],
+                'n_features': k_eff,
+                'selection_method': 'MI-per-fold' if k_eff < n_total else 'none',
             }
             subset_results[clf_name] = result
 
-            # Train final model
-            final_model = clone(clf_clone)
-            final_model.fit(X_sub, y)
-            best_models[f"{subset_name}__{clf_name}"] = final_model
+            # Train final pipeline on full data (for downstream use)
+            final_pipe = clone(pipe)
+            final_pipe.fit(X_raw, y)
+            best_models[f"{subset_name}__{clf_name}"] = final_pipe
 
             log.info(f"    Acc={result['accuracy_mean']:.4f}±{result['accuracy_std']:.4f} "
                      f"Kappa={result['cohens_kappa']:.4f} MCC={result['mcc']:.4f} "
@@ -540,7 +569,7 @@ def session4():
     prep = s2['prep_primary']
     all_results = s3['all_results']
     best_models = s3['best_models']
-    X_train = prep['X_train']; X_test = prep['X_test']
+    X_train_raw = prep['X_train_raw']; X_test_raw = prep['X_test_raw']
     y_train = prep['y_train']; y_test = prep['y_test']
     le = prep['label_encoder']
 
@@ -555,10 +584,23 @@ def session4():
         model_key = f"all_7__{clf_name}"
         if model_key not in best_models:
             continue
-        model = best_models[model_key]
+        pipe = best_models[model_key]  # Pipeline(scaler → [selector] → clf)
         log.info(f"  Computing SHAP for {clf_name}...")
 
-        shap_vals, _ = compute_shap_values(model, X_train.values, X_test.values, FEATURES)
+        # Extract scaler + selector from pipeline, apply to raw data
+        from sklearn.pipeline import Pipeline as SkPipeline
+        X_train_scaled = pipe.named_steps['scaler'].transform(X_train_raw)
+        X_test_scaled = pipe.named_steps['scaler'].transform(X_test_raw)
+        if 'selector' in pipe.named_steps:
+            X_train_scaled = pipe.named_steps['selector'].transform(X_train_scaled)
+            X_test_scaled = pipe.named_steps['selector'].transform(X_test_scaled)
+            sel_idx = pipe.named_steps['selector'].get_support(indices=True)
+            shap_features = [FEATURES[i] for i in sel_idx]
+        else:
+            shap_features = FEATURES
+        clf_model = pipe.named_steps['clf']
+
+        shap_vals, _ = compute_shap_values(clf_model, X_train_scaled, X_test_scaled, shap_features)
         if shap_vals is not None:
             try:
                 # Handle various SHAP output shapes
@@ -574,8 +616,8 @@ def session4():
                 else:
                     log.warning(f"  Unexpected SHAP shape: {shap_vals.shape}")
                     continue
-                mean_shap = np.atleast_1d(mean_shap).flatten()[:len(FEATURES)]
-                feat_imp = pd.DataFrame({'feature': FEATURES[:len(mean_shap)], 'mean_|SHAP|': mean_shap}
+                mean_shap = np.atleast_1d(mean_shap).flatten()[:len(shap_features)]
+                feat_imp = pd.DataFrame({'feature': shap_features[:len(mean_shap)], 'mean_|SHAP|': mean_shap}
                                         ).sort_values('mean_|SHAP|')
                 fig, ax = plt.subplots(figsize=(10, 6))
                 ax.barh(feat_imp['feature'], feat_imp['mean_|SHAP|'], color='#E91E63')
@@ -589,9 +631,9 @@ def session4():
     log.info("\nPhase 4.2: GaussianNB Calibration & Independence Violation")
     nb_key = 'all_7__GaussianNB'
     if nb_key in best_models:
-        nb_model = best_models[nb_key]
-        nb_analysis = analyze_gaussian_nb_calibration(nb_model, X_test.values, y_test, le)
-        violations = correlation_violation_report(X_train.values, FEATURES)
+        nb_pipe = best_models[nb_key]
+        nb_analysis = analyze_gaussian_nb_calibration(nb_pipe, X_test_raw.values, y_test, le)
+        violations = correlation_violation_report(X_train_raw.values, FEATURES)
         nb_analysis['correlation_violations'] = violations
         log.info(f"  Independence violations: {len(violations)} pairs")
         save_json(nb_analysis, 'gaussian_nb_analysis')
@@ -601,8 +643,9 @@ def session4():
     best_clf_name = top3[0][0]
     best_model = best_models.get(f"all_7__{best_clf_name}")
 
-    if best_model is not None:
-        variant_preps = s2['variant_preps']
+    best_pipe = best_models.get(f"all_7__{best_clf_name}")
+    if best_pipe is not None:
+        variants_raw = s1['variants']  # raw degraded DataFrames (unscaled)
         robustness = {}
 
         # Fresh results
@@ -613,12 +656,14 @@ def session4():
             'brier_mean': fresh_res['brier_mean'],
         }
 
-        for scenario, vprep in variant_preps.items():
-            X_v = vprep['X_test']; y_v = vprep['y_test']
-            X_v_clean = handle_missing(pd.DataFrame(X_v, columns=FEATURES))
-            y_pred = best_model.predict(X_v_clean)
-            y_proba = (best_model.predict_proba(X_v_clean)
-                       if hasattr(best_model, 'predict_proba') else None)
+        for scenario, vdf in variants_raw.items():
+            # Pipeline handles scaling internally — pass raw degraded data
+            X_v = vdf[FEATURES].copy()
+            y_v = le.transform(vdf[TARGET])
+            X_v_clean = handle_missing(X_v, feature_cols=FEATURES)
+            y_pred = best_pipe.predict(X_v_clean)
+            y_proba = (best_pipe.predict_proba(X_v_clean)
+                       if hasattr(best_pipe, 'predict_proba') else None)
             m = compute_metrics(y_v, y_pred, y_proba)
             robustness[scenario] = {
                 'accuracy': m['accuracy'], 'cohens_kappa': m['cohens_kappa'],
@@ -629,7 +674,7 @@ def session4():
         save_json(robustness, 'robustness_degradation')
 
         # Figure: Robustness
-        scenarios = ['fresh'] + list(variant_preps.keys())
+        scenarios = ['fresh'] + list(variants_raw.keys())
         fig, axes = plt.subplots(1, 3, figsize=(15, 5))
         for idx, metric in enumerate(['accuracy', 'cohens_kappa', 'brier_mean']):
             ax = axes[idx]
@@ -651,10 +696,10 @@ def session4():
         model_key = f"all_7__{clf_name}"
         if model_key not in best_models:
             continue
-        model = best_models[model_key]
-        if not hasattr(model, 'predict_proba'):
+        pipe = best_models[model_key]
+        if not hasattr(pipe, 'predict_proba'):
             ax.set_title(f'{clf_name} (no proba)', fontweight='bold'); continue
-        y_proba = model.predict_proba(X_test.values)
+        y_proba = pipe.predict_proba(X_test_raw)
         for cls_idx in range(min(5, len(le.classes_))):
             y_bin = (y_test == cls_idx).astype(int)
             prob_true, prob_pred = calibration_curve(y_bin, y_proba[:, cls_idx],
@@ -674,8 +719,8 @@ def session4():
         if 'error' in r: continue
         model_key = f"all_7__{clf_name}"
         if model_key not in best_models: continue
-        model = best_models[model_key]
-        y_pred = model.predict(X_test.values)
+        pipe = best_models[model_key]
+        y_pred = pipe.predict(X_test_raw)
         from sklearn.metrics import f1_score
         per_class_f1 = f1_score(y_test, y_pred, average=None, labels=range(len(le.classes_)))
         per_class_data[clf_name] = per_class_f1

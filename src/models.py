@@ -12,20 +12,21 @@ def get_classifiers():
     return {
         'RandomForest': RandomForestClassifier(
             n_estimators=200, max_depth=20, min_samples_split=5,
-            random_state=RANDOM_STATE, n_jobs=-1),
+            class_weight='balanced', random_state=RANDOM_STATE, n_jobs=-1),
         'SVM_RBF': SVC(
             kernel='rbf', C=10, gamma='scale',
-            random_state=RANDOM_STATE, probability=True),
+            class_weight='balanced', random_state=RANDOM_STATE, probability=True),
         'KNN': KNeighborsClassifier(
             n_neighbors=7, weights='distance', n_jobs=-1),
         'DecisionTree': DecisionTreeClassifier(
-            max_depth=15, min_samples_split=5, random_state=RANDOM_STATE),
+            max_depth=15, min_samples_split=5,
+            class_weight='balanced', random_state=RANDOM_STATE),
         'GradientBoosting': GradientBoostingClassifier(
             n_estimators=150, max_depth=5, learning_rate=0.1,
             random_state=RANDOM_STATE),
         'LogisticRegression': LogisticRegression(
             max_iter=5000, solver='lbfgs',
-            C=1.0, random_state=RANDOM_STATE),
+            C=1.0, class_weight='balanced', random_state=RANDOM_STATE),
         'MLP': MLPClassifier(
             hidden_layer_sizes=(128, 64, 32), max_iter=500,
             early_stopping=True, validation_fraction=0.15,
