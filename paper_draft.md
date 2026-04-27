@@ -89,7 +89,7 @@ The primary dataset contains 7 soil and climate features with 22 balanced crop c
 | Imbalance | 401 / 440 / 39 (natural distribution, ratio 11.28:1) |
 | Missing | ~3% real sensor/lab dropout |
 
-The secondary dataset comprises actual soil laboratory test results from Indian agricultural testing centres. Its natural class imbalance and real missing values provide a realistic test surface. The minority class (Low Fertility, 39 samples) represents a genuine challenge for classifiers — this is the setting where `class_weight='balanced'` matters most.
+The secondary dataset comprises actual soil laboratory test results from Indian agricultural testing centres. Its natural class imbalance and real missing values provide a realistic test surface. The minority class (Low Fertility, 39 samples; Figure 5) represents a genuine challenge for classifiers — this is the setting where `class_weight='balanced'` matters most.
 
 ### 3.3 Shared Feature Space
 
@@ -117,7 +117,7 @@ Three degradation scenarios are generated: mild (7-day), moderate (30-day), and 
 
 ### 4.1 System Overview
 
-RobustCrop is a modular, leak-free ML pipeline for crop recommendation. The key design principle is that **every preprocessing step observes only training data within each cross-validation fold**. The system architecture:
+RobustCrop is a modular, leak-free ML pipeline for crop recommendation, implemented using scikit-learn (Pedregosa et al., 2011). The key design principle is that **every preprocessing step observes only training data within each cross-validation fold**. The system architecture:
 
 ```
 Data Acquisition → Preprocessing → Consensus FS Ranking (interpretation only)
@@ -234,7 +234,7 @@ Nine additional classifiers are evaluated as benchmarks to contextualise the pro
 | 6 | Temperature | 0.46 |
 | 7 | pH | 0.36 |
 
-All six methods consistently rank **humidity** as the most discriminative feature, followed by **rainfall** and **potassium (K)**. The dominance of climate features over soil nutrients suggests that macro-environmental conditions are the primary driver of crop suitability.
+All six methods consistently rank **humidity** as the most discriminative feature, followed by **rainfall** and **potassium (K)** (Figure 8). The dominance of climate features over soil nutrients suggests that macro-environmental conditions are the primary driver of crop suitability.
 
 #### Secondary Dataset (12 features)
 
@@ -253,7 +253,7 @@ All six methods consistently rank **humidity** as the most discriminative featur
 | 11 | P | 0.36 |
 | 12 | N | 0.27 |
 
-For real soil fertility data, **micronutrients (Zn, Mn, Fe, B)** dominate — contrary to the primary dataset where macronutrients (N, P, K) are mid-ranked. This indicates that micronutrient profiles carry stronger discriminative signal for fertility classification, a finding that would be missed if only the semi-synthetic benchmark were used.
+For real soil fertility data, **micronutrients (Zn, Mn, Fe, B)** dominate (Figure 9) — contrary to the primary dataset where macronutrients (N, P, K) are mid-ranked. This indicates that micronutrient profiles carry stronger discriminative signal for fertility classification, a finding that would be missed if only the semi-synthetic benchmark were used.
 
 ### 5.2 Proposed System Performance — Primary Dataset
 
@@ -272,7 +272,7 @@ For real soil fertility data, **micronutrients (Zn, Mn, Fe, B)** dominate — co
 
 *Table 2: Classification results on the primary dataset (all 7 features). Bold = proposed system. A Friedman test across all 10 classifiers confirms statistically significant differences (χ² = 32.32, p < 0.001).*
 
-All classifiers exceed 97% accuracy, confirming the primary dataset's well-separated feature space. The proposed Random Forest achieves **99.50% ± 0.09%** with the lowest variance. GaussianNB is competitive (99.45%) with the best calibration (ECE=0.0069), but as Section 5.3 shows, this does not transfer to real-world data.
+All classifiers exceed 97% accuracy, confirming the primary dataset's well-separated feature space (Figure 10). The proposed Random Forest achieves **99.50% ± 0.09%** with the lowest variance. GaussianNB is competitive (99.45%) with the best calibration (ECE=0.0069), but as Section 5.3 shows, this does not transfer to real-world data.
 
 ### 5.3 Proposed System Performance — Real-World Secondary Dataset
 
@@ -329,13 +329,13 @@ Reducing from 7 to 5 features (removing temperature and pH) causes only 0.45% de
 
 *Table 5: Proposed system robustness under literature-grounded monotonic sensor degradation.*
 
-Performance degrades monotonically under sensor drift. The 7-day threshold shows moderate degradation (5.45pp loss), but the decline accelerates sharply: 30-day deployment loses 29.09pp and 90-day deployment loses 83.41pp. The compounding effect of directional drift across correlated sensors (N-P-K, humidity-rainfall) explains the non-linear collapse.
+Performance degrades monotonically under sensor drift (Figure 12). The 7-day threshold shows moderate degradation (5.45pp loss), but the decline accelerates sharply: 30-day deployment loses 29.09pp and 90-day deployment loses 83.41pp. The compounding effect of directional drift across correlated sensors (N-P-K, humidity-rainfall) explains the non-linear collapse.
 
 **Practical recalibration guidance:** Weekly sensor recalibration maintains >94% accuracy; however, monthly recalibration is insufficient (70.41% accuracy). The steep degradation curve means that **weekly recalibration is not optional but mandatory** for deployment reliability. For resource-constrained deployments where weekly recalibration is infeasible, the system should flag predictions as low-confidence after 7 days of uncalibrated operation. The cost of recalibration must be weighed against the cost of incorrect crop recommendations, which can affect entire harvest yields.
 
 ### 5.6 SHAP Explainability Analysis
 
-SHAP (SHapley Additive exPlanations) analysis (Lundberg and Lee, 2017) of the proposed Random Forest classifier provides both global feature importance and interaction insights.
+SHAP (SHapley Additive exPlanations) analysis (Lundberg and Lee, 2017) of the proposed Random Forest classifier provides both global feature importance and interaction insights (Figure 11).
 
 #### Global Feature Importance (mean |SHAP|)
 
@@ -357,7 +357,7 @@ SHAP analysis reveals that feature importance is not simply additive. Humidity a
 
 #### GaussianNB: Accuracy Without Calibration
 
-SHAP analysis of GaussianNB reveals that its competitive accuracy (99.45%) on the primary dataset arises from the well-separated feature space pushing posterior probabilities to near-0/1 extremes (mean max posterior = 0.993). While the classification *ranking* is correct (hence high accuracy), the probability *calibration* is poor. On the real secondary dataset, the lack of `class_weight` support and the conditional independence violation (P–K correlation = 0.736) cause failure (80.11%).
+SHAP analysis of GaussianNB reveals that its competitive accuracy (99.45%) on the primary dataset arises from the well-separated feature space pushing posterior probabilities to near-0/1 extremes (mean max posterior = 0.993). While the classification *ranking* is correct (hence high accuracy), the probability *calibration* is poor (Figure 13). On the real secondary dataset, the lack of `class_weight` support and the conditional independence violation (P–K correlation = 0.736) cause failure (80.11%). SHAP feature importance for both classifiers is shown in Figure 11.
 
 ### 5.7 Cross-Dataset Feature Consistency
 
@@ -472,9 +472,11 @@ These findings provide actionable guidance for deploying ML-based crop recommend
 5. Lobnik, A., et al. (2011). Long-term stability of pH sensors. *Sensors and Actuators B*, 156(2), 593–599.
 6. Lundberg, S. M., & Lee, S.-I. (2017). A unified approach to interpreting model predictions. *Advances in Neural Information Processing Systems*, 30.
 7. Martínez, M., et al. (2007). Tipping-bucket rain gauge accuracy. *Hydrology and Earth System Sciences*, 11(2), 883–894.
-8. Pedregosa, F., et al. (2011). Scikit-learn: Machine learning in Python. *Journal of Machine Learning Research*, 12, 2825–2830.
-9. Rana, S. S., et al. (2019). IoT-based smart agriculture sensor networks. *IEEE Access*, 7, 155274–155291.
-10. Shah, K., et al. (2022). Crop recommendation using machine learning. *International Journal of Engineering Trends and Technology*, 70(3), 134–142.
+8. Sensirion AG (2022). *SHT4x datasheet: Digital humidity and temperature sensor*. Sensirion. https://sensirion.com/products/catalog/SHT4x/
+9. Pedregosa, F., et al. (2011). Scikit-learn: Machine learning in Python. *Journal of Machine Learning Research*, 12, 2825–2830.
+10. Rana, S. S., et al. (2019). IoT-based smart agriculture sensor networks. *IEEE Access*, 7, 155274–155291.
+11. Shah, K., et al. (2022). Crop recommendation using machine learning. *International Journal of Engineering Trends and Technology*, 70(3), 134–142.
+12. World Bank (2023). *Employment in agriculture (% of total employment)*. World Bank Open Data. https://data.worldbank.org/indicator/SL.AGR.EMPL.ZS
 
 ---
 
