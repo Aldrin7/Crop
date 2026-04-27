@@ -38,7 +38,7 @@
 | Missing | ~3% (real sensor/lab dropout) |
 
 ### Shared Feature Space
-Both datasets share **N, P, K, pH** — enabling cross-dataset validation of feature selection consistency.
+Both datasets share **N, P, K, pH** — enabling cross-dataset feature consistency analysis.
 
 ### Degradation Variants (Primary)
 Literature-grounded sensor drift simulation (Rana et al. 2019, Lobnik et al. 2011):

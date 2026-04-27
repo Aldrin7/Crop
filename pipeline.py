@@ -2,7 +2,7 @@
 """
 Crop Recommendation Pipeline v3.1
 ============================================
-Dual-dataset design with cross-dataset validation:
+Dual-dataset design with cross-dataset feature consistency analysis:
   Primary:   Crop Recommendation (semi-synthetic, 2200 samples, 22 classes)
   Secondary: Soil Fertility (real lab measurements, 880 samples, 3 classes)
 
@@ -19,7 +19,7 @@ Usage:
   python pipeline.py --session 1   # Data & EDA (both datasets)
   python pipeline.py --session 2   # Preprocessing + descriptive FS
   python pipeline.py --session 3   # Training (5-fold stratified CV, leak-free Pipeline)
-  python pipeline.py --session 4   # Evaluation + SHAP + calibration + cross-dataset
+  python pipeline.py --session 4   # Evaluation + SHAP + calibration + cross-dataset consistency
   python pipeline.py --session 5   # Paper artifacts
   python pipeline.py --all
 """
@@ -45,7 +45,7 @@ from src.models import all_classifiers
 from src.evaluation import compute_metrics, friedman_test, nemenyi_critical_difference
 from src.explainability import (compute_shap_values, analyze_gaussian_nb_calibration,
                                  correlation_violation_report)
-from src.noise_injection import degrade_dataset, add_class_imbalance
+from src.noise_injection import degrade_dataset
 
 warnings.filterwarnings('ignore')
 sns.set_theme(style='whitegrid', palette='husl', font_scale=1.1)
@@ -747,7 +747,7 @@ def session4():
         sub.columns = ['feature', f'{label}_rank_score']
         xval = xval.merge(sub, on='feature', how='left')
     xval['consistency'] = 1 - abs(xval['primary_rank_score'] - xval['secondary_rank_score'])
-    save_table(xval, 'cross_dataset_validation')
+    save_table(xval, 'cross_dataset_consistency')
 
     log.info(f"Cross-dataset consistency:\n{xval.to_string(index=False)}")
 
@@ -818,7 +818,7 @@ def session5():
             'secondary': 'Soil Fertility (Kaggle, Rahul Jaiswal) — real lab measurements, '
                          '880 samples, 3 fertility classes, natural imbalance',
             'shared_features': 'N, P, K (pH close match)',
-            'cross_dataset_validation': True,
+            'cross_dataset_consistency': True,
         },
         'peer_review_fixes': {
             '2.1_semi_synthetic': 'Acknowledged + real secondary dataset + degradation variants',
@@ -827,7 +827,7 @@ def session5():
             '3.1_modular': 'src/*.py architecture',
             '3.2_metrics': 'Kappa, MCC, Brier, ECE (no redundant)',
             '3.3_interpretability': 'SHAP + GaussianNB calibration',
-            '4.1_cross_dataset': 'Real secondary for generalisation validation',
+            '4.1_cross_dataset': 'Real secondary for feature consistency analysis',
         },
         'best_classifier': best_row['clf'] if best_row else 'N/A',
         'best_accuracy': best_acc,

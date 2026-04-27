@@ -13,7 +13,7 @@ Gurukul Kangri (Deemed to be University), Haridwar, Uttarakhand, India
 
 ## Abstract
 
-Deploying machine learning for crop recommendation in real agricultural settings requires addressing three practical challenges overlooked by prior work: data leakage in preprocessing pipelines, class imbalance in real-world soil data, and over-reliance on semi-synthetic benchmarks without external validation. This paper proposes **RobustCrop**, a leak-free pipeline that encapsulates feature scaling, mutual-information-based feature selection, and classification within a single scikit-learn Pipeline per cross-validation fold, eliminating the information leakage that inflates accuracy in prior studies. The system employs `class_weight='balanced'` where supported to handle natural class imbalance. We evaluate on two datasets: a primary crop recommendation dataset (2,200 samples, 22 semi-synthetic classes) and a real-world soil fertility dataset (880 samples, 3 classes, 11.28:1 imbalance ratio). On real-world data, the proposed Random Forest pipeline achieves **91.25% ± 0.77% accuracy** (κ = 0.8364, macro-F1 = 81.85%), outperforming nine benchmark classifiers. SHAP analysis identifies humidity and rainfall as dominant predictors, with potassium and nitrogen as key soil nutrient differentiators. Literature-grounded sensor degradation analysis shows graceful decay from 96.64% (7-day) to 43.82% (90-day drift), establishing that weekly recalibration maintains >95% accuracy. Cross-dataset feature consistency analysis reveals phosphorus as the most transferable feature (consistency = 0.804) while potassium importance is task-dependent (0.293). A Friedman test confirms statistically significant differences among classifiers (χ² = 26.4, p < 0.001). These findings provide actionable deployment guidance for ML-based crop recommendation in resource-constrained agricultural IoT settings.
+Deploying machine learning for crop recommendation in real agricultural settings requires addressing three practical challenges overlooked by prior work: data leakage in preprocessing pipelines, class imbalance in real-world soil data, and over-reliance on semi-synthetic benchmarks without external validation. This paper proposes **RobustCrop**, a leak-free pipeline that encapsulates feature scaling, mutual-information-based feature selection, and classification within a single scikit-learn Pipeline per cross-validation fold, eliminating the information leakage that inflates accuracy in prior studies. The system employs `class_weight='balanced'` where supported to handle natural class imbalance. We evaluate on two datasets: a primary crop recommendation dataset (2,200 samples, 22 semi-synthetic classes) and a real-world soil fertility dataset (880 samples, 3 classes, 11.28:1 imbalance ratio). On real-world data, the proposed Random Forest pipeline achieves **91.25% ± 0.77% accuracy** (κ = 0.8364, macro-F1 = 81.85%), outperforming nine benchmark classifiers. SHAP analysis identifies humidity and rainfall as dominant predictors, with potassium and nitrogen as key soil nutrient differentiators. Literature-grounded sensor degradation analysis shows graceful decay from 96.64% (7-day) to 43.82% (90-day drift), establishing that weekly recalibration maintains >95% accuracy. Cross-dataset feature consistency analysis reveals phosphorus as the most transferable feature (consistency = 0.804) while potassium importance is task-dependent (0.293). A Friedman test across classifiers confirms statistically significant differences (p < 0.001); exact test statistics are available in the supplementary materials. These findings provide actionable deployment guidance for ML-based crop recommendation in resource-constrained agricultural IoT settings.
 
 **Keywords:** Crop Recommendation, Feature Selection, Soil Nutrients, Precision Agriculture, Machine Learning, Sensor Degradation, SHAP Explainability, Cross-Dataset Analysis
 
@@ -270,7 +270,7 @@ For real soil fertility data, **micronutrients (Zn, Mn, Fe, B)** dominate — co
 | MLP | 0.9727 ± 0.0109 | 0.9714 | 0.9715 | 0.9727 | 0.0018 | 0.0222 |
 | Logistic Regression | 0.9709 ± 0.0058 | 0.9695 | 0.9696 | 0.9709 | 0.0036 | 0.1298 |
 
-*Table 2: Classification results on the primary dataset (all 7 features). Bold = proposed system. A Friedman test across all 10 classifiers confirms statistically significant differences (χ² = 26.4, p < 0.001).*
+*Table 2: Classification results on the primary dataset (all 7 features). Bold = proposed system. A Friedman test across all 10 classifiers confirms statistically significant differences (p < 0.001).*
 
 All classifiers exceed 97% accuracy, confirming the primary dataset's well-separated feature space. The proposed Random Forest achieves **99.50% ± 0.09%** with the lowest variance. GaussianNB is competitive (99.45%) with the best calibration (ECE=0.0069), but as Section 5.3 shows, this does not transfer to real-world data.
 
@@ -295,7 +295,7 @@ The secondary dataset is the more meaningful evaluation: real data, natural imba
 
 **Key findings:**
 
-1. **The proposed system achieves 91.25% accuracy (κ = 0.8364)** on real, imbalanced data — outperforming all benchmarks.
+1. **The proposed system achieves 91.25% accuracy (κ = 0.8364)** on real, imbalanced data — outperforming all benchmarks, with the widest margin against classifiers lacking imbalance handling (Section 4.5).
 
 2. **The accuracy–Macro-F1 gap (9.40pp)** reveals the minority class challenge. Even the best classifier struggles with the Low Fertility class (39 samples). The gap is much smaller for the proposed system (9.40pp) than for benchmarks like MLP (24.37pp) or Logistic Regression (12.63pp), demonstrating that `class_weight='balanced'` helps.
 
@@ -453,7 +453,7 @@ This study's v3.1 revision corrected a critical data leakage issue. Previous pip
 This paper proposes **RobustCrop**, a leak-free ML pipeline for crop recommendation that addresses three critical gaps in prior work: data leakage in preprocessing, class imbalance in real-world data, and lack of external validation. Through a dual-dataset evaluation with cross-dataset feature consistency analysis, we demonstrate that:
 
 1. The proposed Random Forest pipeline with `class_weight='balanced'` and per-fold feature selection achieves **99.50% accuracy** on the primary dataset and **91.25% accuracy** (macro-F1 = 81.85%) on the real-world imbalanced secondary dataset, outperforming nine benchmark classifiers.
-2. **Leak-free Pipeline architecture** (StandardScaler → SelectKBest(MI) → Classifier per fold) eliminates the data leakage that inflates accuracy in prior work. A Friedman test confirms statistically significant differences among classifiers (χ² = 26.4, p < 0.001).
+2. **Leak-free Pipeline architecture** (StandardScaler → SelectKBest(MI) → Classifier per fold) eliminates the data leakage that inflates accuracy in prior work. A Friedman test across classifiers confirms statistically significant differences (p < 0.001); exact test statistics are available in the supplementary materials.
 3. **Consensus feature ranking** across six methods identifies humidity and rainfall as the most important features for crop recommendation, with a 5-feature subset achieving 99.05% accuracy with 29% fewer sensors.
 4. **GaussianNB**, despite competitive accuracy on balanced data, fails on real-world imbalanced data (80.11%) due to its lack of class weighting — a cautionary finding for agricultural ML relying solely on semi-synthetic benchmarks.
 5. **Sensor degradation** follows a critical threshold at 7 days: weekly recalibration maintains >95% accuracy, while 90-day monotonic drift causes catastrophic 55.68% degradation.
@@ -596,7 +596,7 @@ All 14 publication-quality figures are available in `results/figures/` in both P
 | per_class_f1.csv | Per-class F1 scores for all classifiers |
 | fs_consensus.csv | Consensus feature ranking (primary dataset) |
 | fs_sec_consensus.csv | Consensus feature ranking (secondary dataset) |
-| cross_dataset_validation.csv | Cross-dataset feature consistency metrics |
+| cross_dataset_consistency.csv | Cross-dataset feature consistency metrics |
 | friedman_test.json | Friedman test results (χ², p-value, significance) |
 | robustness_degradation.json | Sensor degradation robustness metrics |
 | gaussian_nb_analysis.json | GaussianNB calibration analysis |
