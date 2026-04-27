@@ -595,10 +595,9 @@ def session4():
             X_train_scaled = pipe.named_steps['selector'].transform(X_train_scaled)
             X_test_scaled = pipe.named_steps['selector'].transform(X_test_scaled)
             sel_idx = pipe.named_steps['selector'].get_support(indices=True)
-            all_feats = feature_cols if feature_cols is not None else FEATURES
-            shap_features = [all_feats[i] for i in sel_idx if i < len(all_feats)]
+            shap_features = [FEATURES[i] for i in sel_idx if i < len(FEATURES)]
         else:
-            shap_features = feature_cols if feature_cols is not None else FEATURES
+            shap_features = FEATURES
         clf_model = pipe.named_steps['clf']
 
         shap_vals, _ = compute_shap_values(clf_model, X_train_scaled, X_test_scaled, shap_features)
@@ -811,8 +810,8 @@ def session5():
 
     # ── 5.3 Final summary ─────────────────────────────────────────────────
     final = {
-        'title': ('A Comparative Study of Feature Selection Algorithms and Classification '
-                  'Methods for Crop Recommendation Using Integrated Soil Nutrient and Climate Data'),
+        'title': ('RobustCrop: A Leak-Free Machine Learning Pipeline for Crop Recommendation '
+                  'with Sensor Degradation Analysis and Cross-Dataset Feature Consistency'),
         'dual_dataset_design': {
             'primary': 'Crop Recommendation (Kaggle) — semi-synthetic, 2200 samples, 22 classes',
             'secondary': 'Soil Fertility (Kaggle, Rahul Jaiswal) — real lab measurements, '

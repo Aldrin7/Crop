@@ -13,7 +13,7 @@ Gurukul Kangri (Deemed to be University), Haridwar, Uttarakhand, India
 
 ## Abstract
 
-Deploying machine learning for crop recommendation in real agricultural settings requires addressing three practical challenges overlooked by prior work: data leakage in preprocessing pipelines, class imbalance in real-world soil data, and over-reliance on semi-synthetic benchmarks without external validation. This paper proposes **RobustCrop**, a leak-free pipeline that encapsulates feature scaling, mutual-information-based feature selection, and classification within a single scikit-learn Pipeline per cross-validation fold, eliminating the information leakage that inflates accuracy in prior studies. The system employs `class_weight='balanced'` where supported to handle natural class imbalance. We evaluate on two datasets: a primary crop recommendation dataset (2,200 samples, 22 semi-synthetic classes) and a real-world soil fertility dataset (880 samples, 3 classes, 11.28:1 imbalance ratio). On real-world data, the proposed Random Forest pipeline achieves **91.25% ± 0.77% accuracy** (κ = 0.8364, macro-F1 = 81.85%), outperforming nine benchmark classifiers. SHAP analysis identifies humidity and rainfall as dominant predictors, with potassium and nitrogen as key soil nutrient differentiators. Literature-grounded sensor degradation analysis shows graceful decay from 96.64% (7-day) to 43.82% (90-day drift), establishing that weekly recalibration maintains >95% accuracy. Cross-dataset feature consistency analysis reveals phosphorus as the most transferable feature (consistency = 0.804) while potassium importance is task-dependent (0.293). A Friedman test across classifiers confirms statistically significant differences (p < 0.001); exact test statistics are available in the supplementary materials. These findings provide actionable deployment guidance for ML-based crop recommendation in resource-constrained agricultural IoT settings.
+Deploying machine learning for crop recommendation in real agricultural settings requires addressing three practical challenges overlooked by prior work: data leakage in preprocessing pipelines, class imbalance in real-world soil data, and over-reliance on semi-synthetic benchmarks without external validation. This paper proposes **RobustCrop**, a leak-free pipeline that encapsulates feature scaling, mutual-information-based feature selection, and classification within a single scikit-learn Pipeline per cross-validation fold, eliminating the information leakage that inflates accuracy in prior studies. The system employs `class_weight='balanced'` where supported to handle natural class imbalance. We evaluate on two datasets: a primary crop recommendation dataset (2,200 samples, 22 semi-synthetic classes) and a real-world soil fertility dataset (880 samples, 3 classes, 11.28:1 imbalance ratio). On real-world data, the proposed Random Forest pipeline achieves **91.25% ± 0.77% accuracy** (κ = 0.8364, macro-F1 = 81.85%), outperforming nine benchmark classifiers. SHAP analysis identifies humidity and rainfall as dominant predictors, with potassium and nitrogen as key soil nutrient differentiators. Literature-grounded sensor degradation analysis under monotonic drift shows decay from 94.05% (7-day) to 16.09% (90-day drift), establishing that weekly recalibration maintains >94% accuracy. Cross-dataset feature consistency analysis reveals phosphorus as the most transferable feature (consistency = 0.804) while potassium importance is task-dependent (0.293). A Friedman test across classifiers confirms statistically significant differences (χ² = 32.32, p < 0.001). These findings provide actionable deployment guidance for ML-based crop recommendation in resource-constrained agricultural IoT settings.
 
 **Keywords:** Crop Recommendation, Feature Selection, Soil Nutrients, Precision Agriculture, Machine Learning, Sensor Degradation, SHAP Explainability, Cross-Dataset Analysis
 
@@ -270,7 +270,7 @@ For real soil fertility data, **micronutrients (Zn, Mn, Fe, B)** dominate — co
 | MLP | 0.9727 ± 0.0109 | 0.9714 | 0.9715 | 0.9727 | 0.0018 | 0.0222 |
 | Logistic Regression | 0.9709 ± 0.0058 | 0.9695 | 0.9696 | 0.9709 | 0.0036 | 0.1298 |
 
-*Table 2: Classification results on the primary dataset (all 7 features). Bold = proposed system. A Friedman test across all 10 classifiers confirms statistically significant differences (p < 0.001).*
+*Table 2: Classification results on the primary dataset (all 7 features). Bold = proposed system. A Friedman test across all 10 classifiers confirms statistically significant differences (χ² = 32.32, p < 0.001).*
 
 All classifiers exceed 97% accuracy, confirming the primary dataset's well-separated feature space. The proposed Random Forest achieves **99.50% ± 0.09%** with the lowest variance. GaussianNB is competitive (99.45%) with the best calibration (ECE=0.0069), but as Section 5.3 shows, this does not transfer to real-world data.
 
@@ -323,15 +323,15 @@ Reducing from 7 to 5 features (removing temperature and pH) causes only 0.45% de
 | Scenario | Deployment | Accuracy | κ | Brier | Δ vs Fresh |
 |----------|-----------|----------|------|-------|-----------|
 | Fresh | 0 days | 0.9950 | 0.9948 | 0.0007 | — |
-| Mild | 7 days | 0.9664 | 0.9648 | 0.0039 | −2.86% |
-| Moderate | 30 days | 0.8177 | 0.8090 | 0.0138 | −17.73% |
-| Severe | 90 days | 0.4382 | 0.4114 | 0.0331 | −55.68% |
+| Mild | 7 days | 0.9405 | 0.9376 | 0.0052 | −5.45% |
+| Moderate | 30 days | 0.7041 | 0.6900 | 0.0212 | −29.09% |
+| Severe | 90 days | 0.1609 | 0.1210 | 0.0452 | −83.41% |
 
 *Table 5: Proposed system robustness under literature-grounded monotonic sensor degradation.*
 
-Performance degrades gracefully under mild degradation but collapses under severe drift. The 7-day threshold is critical — beyond it, performance drops sharply due to compounding monotonic drift across correlated sensors.
+Performance degrades monotonically under sensor drift. The 7-day threshold shows moderate degradation (5.45pp loss), but the decline accelerates sharply: 30-day deployment loses 29.09pp and 90-day deployment loses 83.41pp. The compounding effect of directional drift across correlated sensors (N-P-K, humidity-rainfall) explains the non-linear collapse.
 
-**Practical recalibration guidance:** Weekly sensor recalibration maintains >95% accuracy; monthly recalibration maintains >80%. However, recalibration requires lab reference measurements, which have associated costs. For resource-constrained deployments, the 30-day threshold (81.77% accuracy) may represent an acceptable cost-performance trade-off, depending on the economic value of correct crop recommendation versus recalibration logistics. We recommend that deployment-specific cost-benefit analysis guide the recalibration schedule.
+**Practical recalibration guidance:** Weekly sensor recalibration maintains >94% accuracy; however, monthly recalibration is insufficient (70.41% accuracy). The steep degradation curve means that **weekly recalibration is not optional but mandatory** for deployment reliability. For resource-constrained deployments where weekly recalibration is infeasible, the system should flag predictions as low-confidence after 7 days of uncalibrated operation. The cost of recalibration must be weighed against the cost of incorrect crop recommendations, which can affect entire harvest yields.
 
 ### 5.6 SHAP Explainability Analysis
 
@@ -411,7 +411,7 @@ Per-class F1 scores for all classifiers are provided in `results/tables/per_clas
 |----------|---------------|----------|
 | Sensor priority | Humidity > Rainfall > K > N | SHAP importance (Section 5.6) |
 | Minimum sensor set | 5 features (drop Temp, pH) | 99.05% accuracy, 29% fewer sensors (Section 5.4) |
-| Recalibration frequency | Weekly (>95% acc) or monthly (>80% acc) | Robustness analysis (Section 5.5) |
+| Recalibration frequency | **Weekly (mandatory)** — >94% acc; monthly insufficient (70%) | Robustness analysis (Section 5.5) |
 | Classifier choice | RF with class_weight='balanced' | Best on both datasets (Sections 5.2–5.3) |
 | Feature transferability | P is most reliable across domains | Consistency = 0.804 (Section 5.7) |
 | Imbalance handling | Always apply class_weight or equivalent | GaussianNB failure shows benchmark danger |
@@ -453,10 +453,10 @@ This study's v3.1 revision corrected a critical data leakage issue. Previous pip
 This paper proposes **RobustCrop**, a leak-free ML pipeline for crop recommendation that addresses three critical gaps in prior work: data leakage in preprocessing, class imbalance in real-world data, and lack of external validation. Through a dual-dataset evaluation with cross-dataset feature consistency analysis, we demonstrate that:
 
 1. The proposed Random Forest pipeline with `class_weight='balanced'` and per-fold feature selection achieves **99.50% accuracy** on the primary dataset and **91.25% accuracy** (macro-F1 = 81.85%) on the real-world imbalanced secondary dataset, outperforming nine benchmark classifiers.
-2. **Leak-free Pipeline architecture** (StandardScaler → SelectKBest(MI) → Classifier per fold) eliminates the data leakage that inflates accuracy in prior work. A Friedman test across classifiers confirms statistically significant differences (p < 0.001); exact test statistics are available in the supplementary materials.
+2. **Leak-free Pipeline architecture** (StandardScaler → SelectKBest(MI) → Classifier per fold) eliminates the data leakage that inflates accuracy in prior work. A Friedman test across classifiers confirms statistically significant differences (χ² = 32.32, p < 0.001).
 3. **Consensus feature ranking** across six methods identifies humidity and rainfall as the most important features for crop recommendation, with a 5-feature subset achieving 99.05% accuracy with 29% fewer sensors.
 4. **GaussianNB**, despite competitive accuracy on balanced data, fails on real-world imbalanced data (80.11%) due to its lack of class weighting — a cautionary finding for agricultural ML relying solely on semi-synthetic benchmarks.
-5. **Sensor degradation** follows a critical threshold at 7 days: weekly recalibration maintains >95% accuracy, while 90-day monotonic drift causes catastrophic 55.68% degradation.
+5. **Sensor degradation** under monotonic drift is severe: weekly recalibration maintains >94% accuracy, but 90-day uncalibrated deployment causes 83.41% degradation, making recalibration mandatory for reliable operation.
 6. **Cross-dataset feature consistency** reveals phosphorus as the most transferable feature (consistency = 0.804) while potassium importance is task-dependent (0.293), underscoring that feature importance should not be generalised from a single dataset.
 
 These findings provide actionable guidance for deploying ML-based crop recommendation in precision agriculture, from sensor selection and feature engineering to classifier choice and maintenance scheduling.

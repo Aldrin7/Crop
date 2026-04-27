@@ -1,21 +1,20 @@
 {
-    "title": "RobustCrop: A Leak-Free Machine Learning Pipeline for Crop Recommendation with Sensor Degradation Analysis and Cross-Dataset Feature Consistency",
-    "dual_dataset_design": {
-        "primary": "Crop Recommendation (Kaggle) \u2014 semi-synthetic, 2200 samples, 22 classes",
-        "secondary": "Soil Fertility (Kaggle, Rahul Jaiswal) \u2014 real lab measurements, 880 samples, 3 fertility classes, natural imbalance",
-        "shared_features": "N, P, K (pH close match)",
-        "cross_dataset_consistency": true
-    },
-    "peer_review_fixes": {
-        "2.1_semi_synthetic": "Acknowledged + real secondary dataset + degradation variants",
-        "2.2_data_leakage": "FS inside CV loop \u2014 no leakage",
-        "2.3_sensor_degradation": "Literature-grounded monotonic drift (Rana 2019, Lobnik 2011)",
-        "3.1_modular": "src/*.py architecture",
-        "3.2_metrics": "Kappa, MCC, Brier, ECE (no redundant)",
-        "3.3_interpretability": "SHAP + GaussianNB calibration",
-        "4.1_cross_dataset": "Real secondary for feature consistency analysis"
-    },
-    "best_classifier": "RandomForest",
-    "best_accuracy": 0.9950000000000001,
-    "friedman_test": "Not yet computed (re-run pipeline --session 5 to generate)"
+  "title": "RobustCrop: A Leak-Free Machine Learning Pipeline for Crop Recommendation with Sensor Degradation Analysis and Cross-Dataset Feature Consistency",
+  "dual_dataset_design": {
+    "primary": "Crop Recommendation (Kaggle) \u2014 semi-synthetic, 2200 samples, 22 classes",
+    "secondary": "Soil Fertility (Kaggle, Rahul Jaiswal) \u2014 real lab measurements, 880 samples, 3 fertility classes, natural imbalance",
+    "shared_features": "N, P, K (pH close match)",
+    "cross_dataset_consistency": true
+  },
+  "peer_review_fixes": {
+    "2.1_semi_synthetic": "Acknowledged + real secondary dataset + degradation variants",
+    "2.2_data_leakage": "FS inside CV loop \u2014 no leakage",
+    "2.3_sensor_degradation": "Literature-grounded (Rana 2019, Lobnik 2011)",
+    "3.1_modular": "src/*.py architecture",
+    "3.2_metrics": "Kappa, MCC, Brier, ECE (no redundant)",
+    "3.3_interpretability": "SHAP + GaussianNB calibration",
+    "4.1_cross_dataset": "Real secondary for feature consistency analysis"
+  },
+  "best_classifier": "RandomForest",
+  "best_accuracy": 0.9950000000000001
 }

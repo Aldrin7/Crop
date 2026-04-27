@@ -1,0 +1,17 @@
+{
+  "statistic": 32.32025316455698,
+  "p_value": 0.00017527127807897614,
+  "significant": "True",
+  "classifiers": [
+    "RandomForest",
+    "SVM_RBF",
+    "KNN",
+    "DecisionTree",
+    "GradientBoosting",
+    "LogisticRegression",
+    "MLP",
+    "GaussianNB",
+    "XGBoost",
+    "LightGBM"
+  ]
+}
