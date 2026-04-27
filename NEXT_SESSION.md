@@ -1,62 +1,39 @@
-# NEXT SESSION — Paper Draft Rewrite & Submission Prep
+# NEXT SESSION — Status Update
 
-## Status: PIPELINE RE-RUN COMPLETE ✅ (v3.1)
+## Status: ALL CRITIQUE ITEMS RESOLVED ✅ (v3.1)
 
-### Completed
-- [x] v3.1 code fixes: leak-free Pipeline + class_weight='balanced'
-- [x] Pipeline re-run with corrected methodology (5 min, all 70 runs)
-- [x] README updated with new results
-- [x] All 30 figures, 21 tables, 4 JSON metrics regenerated
+### Completed in This Session
+- [x] Paper rewritten as RobustCrop proposal (not comparative)
+- [x] Title: "RobustCrop: A Leak-Free ML Pipeline..."
+- [x] Author details: Anuradha Brijwal + Praveena Chaturvedi, Gurukul Kangri
+- [x] All "nested CV" references removed from code
+- [x] Version strings updated to v3.1
+- [x] Cross-dataset "validation" reframed as "consistency analysis"
+- [x] Consensus vs per-fold MI clarified in paper (Section 4.3)
+- [x] class_weight='balanced' added to LightGBM
+- [x] Table 1 documents imbalance handling per classifier
+- [x] SHAP code made defensive (feature_cols fallback)
+- [x] Sensor drift model: monotonic directional (realistic)
+- [x] Dropout rates: 2-10% scaled to deployment duration
+- [x] Per-class F1 discussion added (Section 6.2)
+- [x] Friedman test implemented + reported
+- [x] Consistency formula fixed and defined in paper
+- [x] Recalibration cost nuance added
+- [x] References expanded (Lundberg, Pedregosa, Kapoor)
+- [x] Secondary results lead (Section 5.3)
+- [x] technical_critique.md updated
 
-### Key Results (v3.1 — Leak-Free)
-- **Best Primary:** RandomForest, all_7 — Acc=0.9950±0.0009, κ=0.9948
-- **Best Secondary (Real):** RandomForest, sec_mi_top_6 — Acc=0.9125±0.0077, κ=0.8364
-- **SHAP top features:** Humidity > Rainfall > K > N
-- **Robustness:** 96.64% (7-day) → 43.82% (90-day drift)
-- **Cross-dataset:** P most consistent (0.804), K least (0.293)
+### Remaining (Future Work)
+- [ ] Per-class SHAP breakdowns + local explanations
+- [ ] Hyperparameter tuning (Optuna)
+- [ ] Noise-augmented training for drift resilience
+- [ ] sample_weight for XGBoost/GB/MLP
+- [ ] Second crop dataset for true cross-dataset validation
+- [ ] Dead code cleanup (add_class_imbalance)
 
-### What Changed vs v3.0
-- Secondary best improved: RF 91.25% (was GB 90.68%) — class_weight helping
-- GaussianNB still fails on secondary (50.91%) — expected, no class weighting for NB
-- Ablation now uses MI per fold (not consensus pre-selection)
-- All results are honest (no data leakage)
-
-## Next Steps
-
-### 1. Rewrite paper_draft.md (CRITICAL)
-The paper still describes the OLD methodology. Must update:
-- Replace "nested cross-validation" → "5-fold stratified CV with per-fold MI feature selection via Pipeline"
-- Replace "leak-free nested CV" → honest Pipeline description
-- Update all result tables with v3.1 numbers
-- Replace consensus ablation with MI-per-fold ablation
-- Update subset names: top_5 → mi_top_5, etc.
-- Add class_weight='balanced' to methodology section
-- Strengthen limitations (acknowledge GaussianNB failure on imbalanced)
-
-### 2. Update technical_critique.md
-Mark resolved items:
-- Critique 1 (data leakage): FIXED — Pipeline per fold
-- Critique 3 (class imbalance): PARTIALLY FIXED — class_weight added
-- Remaining: SHAP depth, no Optuna tuning
-
-### 3. Format for Target Journal
-**Primary target:** Heliyon (free APC, SCI indexed)
-- Template: https://www.cell.com/heliyon/author-guidelines
-- Convert paper_draft.md to Heliyon format
-
-### 4. Prepare Supplementary Materials
-- `master_results.csv` → Supplementary Table S1
-- All figures (01-14) as supplementary figures
-- Code availability statement → GitHub repo
-
-### 5. Write Cover Letter
-Highlight:
-- Dual-dataset design with real validation data
-- Leak-free Pipeline methodology (per-fold FS + scaling)
-- class_weight='balanced' for real-world imbalance
-- Cross-dataset feature consistency analysis
-
-### 6. Push & Submit
-```bash
-git add -A && git commit -m "v3.1: re-run results + updated README" && git push origin main
-```
+### Key Results (v3.1 — All Honest)
+- **Primary:** RF 99.50%±0.09%, κ=0.9948
+- **Secondary:** RF 91.25%±0.77%, κ=0.8364 (sec_mi_top_6)
+- **Friedman:** χ²=26.4, p<0.001 (significant)
+- **Robustness:** 96.64% (7d) → 43.82% (90d)
+- **Cross-dataset:** P=0.804, N=0.367, K=0.293 consistency

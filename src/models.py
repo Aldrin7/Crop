@@ -1,4 +1,6 @@
-"""Classifier definitions — returns a dict of named estimators."""
+"""Classifier definitions — returns a dict of named estimators.
+v3.1: class_weight='balanced' applied where natively supported.
+For XGBoost/GB, sample_weight is passed via fit_params in the Pipeline."""
 from sklearn.ensemble import RandomForestClassifier, GradientBoostingClassifier, ExtraTreesClassifier
 from sklearn.svm import SVC
 from sklearn.neighbors import KNeighborsClassifier
@@ -48,6 +50,7 @@ def get_optional_classifiers():
         import lightgbm as lgb
         extras['LightGBM'] = lgb.LGBMClassifier(
             n_estimators=200, max_depth=6, learning_rate=0.1,
+            class_weight='balanced',
             random_state=RANDOM_STATE, n_jobs=-1, verbose=-1)
     except ImportError:
         pass

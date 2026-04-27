@@ -1,2 +1,2 @@
-"""Crop-Research-v2: Q1-grade crop recommendation pipeline."""
+"""Crop-Research v3.1: Leak-free crop recommendation pipeline."""
 __version__ = "2.0.0"

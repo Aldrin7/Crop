@@ -1,12 +1,12 @@
-# Crop-Research — Q2 Journal Pipeline v3.1
+# RobustCrop — Leak-Free Pipeline v3.1
 
-**Dual-Dataset Design with Cross-Dataset Validation for Crop Recommendation**
+**Dual-Dataset Evaluation with Cross-Dataset Feature Consistency Analysis**
 
-> **v3.1 (2026-04-27):** Leak-free `Pipeline(StandardScaler → SelectKBest(mutual_info) → Classifier)` per CV fold. `class_weight='balanced'` on RF/SVM/DT/LR. All results re-run with corrected methodology.
+> **v3.1 (2026-04-27):** Leak-free `Pipeline(StandardScaler → SelectKBest(mutual_info) → Classifier)` per CV fold. `class_weight=.balanced.` on RF/SVM/DT/LR/LightGBM. All results re-run with corrected methodology.
 
 ## Research Paper
 
-**Title:** *A Comparative Study of Feature Selection Algorithms and Classification Methods for Crop Recommendation Using Integrated Soil Nutrient and Climate Data*
+**Title:** *RobustCrop: A Leak-Free Machine Learning Pipeline for Crop Recommendation with Sensor Degradation Analysis and Cross-Dataset Feature Consistency*
 
 ### Objectives
 1. Comparative study of crop classification by integrating soil nutrients and climate conditions
@@ -171,7 +171,7 @@ Random Forest · SVM-RBF · KNN · Decision Tree · Gradient Boosting · XGBoost
 | 3.1 Monolithic code | Modular `src/*.py` | ✅ |
 | 3.2 Redundant metrics | Kappa, MCC, Brier, ECE | ✅ |
 | 3.3 Interpretability | SHAP + NB calibration analysis | ✅ |
-| 3.4 Class imbalance | **v3.1:** `class_weight='balanced'` on RF/SVM/DT/LR | ✅ |
+| 3.4 Class imbalance | **v3.1:** `class_weight=.balanced.` on RF/SVM/DT/LR/LightGBM | ✅ |
 | 4.1 Generalisation | Cross-dataset validation on real secondary | ✅ |
 | **NEW** Scaling leakage | **v3.1:** Scaler fit per fold via Pipeline | ✅ |
 

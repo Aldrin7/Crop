@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Q1-Grade Crop Recommendation Pipeline v3.0
+Crop Recommendation Pipeline v3.1
 ============================================
 Dual-dataset design with cross-dataset validation:
   Primary:   Crop Recommendation (semi-synthetic, 2200 samples, 22 classes)
@@ -18,7 +18,7 @@ Fixes all peer-review critiques:
 Usage:
   python pipeline.py --session 1   # Data & EDA (both datasets)
   python pipeline.py --session 2   # Preprocessing + descriptive FS
-  python pipeline.py --session 3   # Training (nested CV, leak-free)
+  python pipeline.py --session 3   # Training (5-fold stratified CV, leak-free Pipeline)
   python pipeline.py --session 4   # Evaluation + SHAP + calibration + cross-dataset
   python pipeline.py --session 5   # Paper artifacts
   python pipeline.py --all
@@ -355,15 +355,15 @@ def session2():
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
-# SESSION 3 — NESTED CV TRAINING (LEAK-FREE) + SECONDARY
+# SESSION 3 — LEAK-FREE CV TRAINING + SECONDARY
 # ═══════════════════════════════════════════════════════════════════════════════
 def session3():
     """
     Critique 2.2 fix: Feature selection INSIDE the CV loop.
-    Nested CV: outer=5-fold for unbiased evaluation.
+    5-fold stratified CV with leak-free Pipeline per fold.
     Trains on BOTH primary and secondary datasets separately.
     """
-    log.info("="*60 + "\nSESSION 3: NESTED CV TRAINING (LEAK-FREE)\n" + "="*60)
+    log.info("="*60 + "\nSESSION 3: LEAK-FREE CV TRAINING\n" + "="*60)
 
     if ckpt_exists('s3'):
         return load_ckpt('s3')
@@ -532,7 +532,7 @@ def _save_training_summary(all_results):
                     'Macro-F1': f"{r['macro_f1']:.4f}", 'Brier': f"{r['brier_mean']:.4f}",
                     'ECE': f"{r['ece']:.4f}", 'Time(s)': f"{r['train_time']:.1f}",
                 })
-    save_table(pd.DataFrame(rows), 'nested_cv_results')
+    save_table(pd.DataFrame(rows), 'cv_results')
 
     # Figure: accuracy comparison
     fig, axes = plt.subplots(1, 2, figsize=(20, 8))
@@ -552,8 +552,8 @@ def _save_training_summary(all_results):
         ax.set_xticklabels(clfs, rotation=45, ha='right', fontsize=8)
         ax.set_ylabel('Accuracy'); ax.set_title(f'{title} — Accuracy', fontweight='bold')
         ax.legend(); ax.grid(True, alpha=0.3)
-    fig.suptitle('Nested CV Results (Leak-Free)', fontsize=14, fontweight='bold')
-    fig.tight_layout(); save_fig(fig, '10_nested_cv_comparison')
+    fig.suptitle('Leak-Free CV Results', fontsize=14, fontweight='bold')
+    fig.tight_layout(); save_fig(fig, '10_cv_comparison')
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
@@ -595,9 +595,10 @@ def session4():
             X_train_scaled = pipe.named_steps['selector'].transform(X_train_scaled)
             X_test_scaled = pipe.named_steps['selector'].transform(X_test_scaled)
             sel_idx = pipe.named_steps['selector'].get_support(indices=True)
-            shap_features = [FEATURES[i] for i in sel_idx]
+            all_feats = feature_cols if feature_cols is not None else FEATURES
+            shap_features = [all_feats[i] for i in sel_idx if i < len(all_feats)]
         else:
-            shap_features = FEATURES
+            shap_features = feature_cols if feature_cols is not None else FEATURES
         clf_model = pipe.named_steps['clf']
 
         shap_vals, _ = compute_shap_values(clf_model, X_train_scaled, X_test_scaled, shap_features)
@@ -781,6 +782,22 @@ def session5():
     master = pd.DataFrame(rows)
     save_table(master, 'master_results')
 
+    # ── 5.1b Friedman statistical test ───────────────────────────────
+    log.info("\nFriedman test (primary all_7 classifiers):")
+    primary_results = all_results.get('all_7', {})
+    cv_score_dicts = {}
+    for clf_name, r in primary_results.items():
+        if 'error' not in r and 'fold_scores' in r:
+            cv_score_dicts[clf_name] = r['fold_scores']
+    if len(cv_score_dicts) >= 3:
+        ft = friedman_test(cv_score_dicts)
+        if ft:
+            log.info(f"  Statistic={ft['statistic']:.4f}, p={ft['p_value']:.6f}, "
+                     f"significant={ft['significant']}")
+            save_json(ft, 'friedman_test')
+            cd = nemenyi_critical_difference(len(cv_score_dicts))
+            log.info(f"  Nemenyi CD (alpha=0.05): {cd:.3f}")
+
     # ── 5.2 Best overall ──────────────────────────────────────────────────
     best_row = None; best_acc = 0
     for subset, res in all_results.items():
@@ -835,14 +852,14 @@ def session5():
 def main():
     global log
     log = setup_logging()
-    parser = argparse.ArgumentParser(description='Q1 Crop Recommendation Pipeline v3.0')
+    parser = argparse.ArgumentParser(description='Crop Recommendation Pipeline v3.1')
     parser.add_argument('--session', type=int, choices=[1, 2, 3, 4, 5])
     parser.add_argument('--all', action='store_true')
     parser.add_argument('--skip', type=int, default=0)
     args = parser.parse_args()
 
     log.info("="*60)
-    log.info("CROP RECOMMENDATION — Q1 PIPELINE v3.0 (Dual Dataset)")
+    log.info("CROP RECOMMENDATION — PIPELINE v3.1 (Dual Dataset)")
     log.info(f"Started: {datetime.now():%Y-%m-%d %H:%M:%S}")
     log.info("="*60)
 

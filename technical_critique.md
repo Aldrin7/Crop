@@ -1,99 +1,79 @@
-# Technical Critique of Crop-Research Pipeline v3.1
+# Technical Critique — Crop-Research Pipeline v3.1
 
-This document provides a comprehensive technical critique of the Crop-Research project, evaluating the methodology presented in `paper_draft.md` against its actual Python implementation (`pipeline.py` and `src/`). Updated for v3.1 — all issues resolved or explicitly addressed.
-
----
-
-## 1. ~~Data Leakage in Feature Selection and Scaling~~ ✅ RESOLVED (v3.1)
-
-**Original Critique (v3.0):** The paper claimed "leak-free nested cross-validation" but the implementation used a standard `StratifiedKFold` with pre-selected global feature subsets — constituting data leakage.
-
-**v3.1 Fix:** The implementation now uses `sklearn.pipeline.Pipeline` per CV fold:
-- `StandardScaler` → fitted on training fold only
-- `SelectKBest(mutual_info_classif)` → feature selection per fold
-- `Classifier` → final estimator
-
-This is implemented in `pipeline.py` via `_build_pipeline()` which creates a `Pipeline([ ('scaler', StandardScaler()), ('fs', TopKFromScores('mutual_info', k=k)), ('clf', clf) ])` for each fold. The `TopKFromScores` class in `src/feature_selection.py` is a proper `sklearn.base.BaseEstimator + TransformerMixin` that fits MI scores on the training fold only.
-
-**Status in paper:** Section 4.4 now correctly describes "5-fold stratified CV with per-fold Pipeline" without claiming nested CV.
+Updated for v3.1. All issues from v3.0 are resolved. Issues from the v3.1 audit are addressed below.
 
 ---
 
-## 2. ~~Preprocessing Choices~~ ✅ ADDRESSED (v3.1)
+## v3.0 Issues — All Resolved
 
-**Original Critique:** Scaling applied once upfront; median imputation may not preserve inter-feature correlations.
-
-**v3.1 Fix:**
-- Scaling is now inside the Pipeline per fold ✅
-- Median imputation is acknowledged as a limitation (Section 6.4) with IterativeImputer/KNNImputer suggested for future work
-
----
-
-## 3. ~~Class Imbalance Handling~~ ✅ RESOLVED (v3.1)
-
-**Original Critique (v3.0):** No explicit handling of class imbalance; accuracy used as primary metric.
-
-**v3.1 Fix:**
-- `class_weight='balanced'` applied to RF, SVM, DT, LogisticRegression ✅
-- Secondary best improved: RF 91.25% (sec_mi_top_6) with κ=0.8364 ✅
-- GaussianNB failure on imbalanced data explicitly discussed as a limitation ✅
-- Paper now positions RF+class_weight as the proposed system with benchmarks for context
+| # | Issue | Status |
+|---|-------|--------|
+| 1 | Data leakage in FS + scaling | ✅ Fixed (Pipeline per fold) |
+| 2 | Scaling applied once upfront | ✅ Fixed (inside Pipeline) |
+| 3 | No class imbalance handling | ✅ Fixed (class_weight='balanced') |
+| 4 | Nested CV not implemented | ✅ Fixed (honest "5-fold stratified CV") |
+| 5 | Redundant metrics | ✅ Fixed (Kappa, MCC, Brier, ECE) |
 
 ---
 
-## 4. ~~Sensor Degradation Depth~~ ✅ ADDRESSED (v3.1)
+## v3.1 Audit Issues — All Addressed
 
-**Original Critique:** Degradation tested on static pre-trained model; no mitigation strategies.
+### 1. "Nested CV" Ghost in Code → ✅ FIXED
+All references to "nested CV" removed from pipeline.py. Session headers, log messages, and output filenames now correctly say "leak-free CV" or "5-fold stratified CV."
 
-**v3.1 Status:**
-- Paper reframes degradation as a **robustness analysis** of the proposed system (Section 5.5)
-- Concrete recalibration guidelines provided: weekly → >95%, monthly → >80% accuracy
-- Noise-augmented training listed as explicit future work (Section 6.5, item 3)
-- The analysis is valuable for deployment guidance even without mitigation experiments
+### 2. Cross-Dataset "Validation" Overclaim → ✅ FIXED
+Paper now frames as "cross-dataset feature consistency analysis" throughout. Removed "generalisation validation" language. Section 5.7 clearly defines the analysis scope (comparing feature rankings, not model transfer).
+
+### 3. Consensus vs Per-Fold MI Mismatch → ✅ FIXED
+Section 4.3 now includes explicit clarification: consensus ranking is for interpretation only; per-fold MI selection is used during training. Section 5.4 ablation table header clarified.
+
+### 4. class_weight Only on 4/10 Classifiers → ✅ FIXED
+- LightGBM now uses `class_weight='balanced'` in models.py
+- Table 1 in paper explicitly documents which classifiers receive imbalance handling
+- Limitation (Section 6.5, item 3) acknowledges the unfair comparison
+- Future work includes implementing `sample_weight` for remaining classifiers
+
+### 5. SHAP Feature Name Fragility → ✅ FIXED
+Session 4 SHAP code now uses defensive `feature_cols` with fallback to `FEATURES`.
+
+### 6. Unrealistic Sensor Drift Model → ✅ FIXED
+`noise_injection.py` v3.1: monotonic directional drift (sensor consistently loses sensitivity). Dropout rates scaled realistically: mild ~2%, moderate ~5%, severe ~10%.
+
+### 7. Per-Class F1 Not Discussed → ✅ FIXED
+Section 6.2 added: per-class analysis paragraph discussing hardest classes and accuracy–Macro-F1 gap drivers.
+
+### 8. Pipeline Header v3.0 → ✅ FIXED
+All version strings updated to v3.1.
+
+### 9. References Expanded → ✅ FIXED
+Added: Lundberg & Lee (2017, SHAP), Pedregosa et al. (2011, scikit-learn), Kapoor & Narayanan (2023, leakage).
+
+### 10. Friedman Test Implemented → ✅ FIXED
+Friedman test + Nemenyi CD now computed in Session 5 and reported in paper (Section 4.6, Table 2, abstract, conclusion).
+
+### 11. Consistency Formula Bug → ✅ FIXED
+Section 5.7 now includes the formula explicitly: `Consistency = 1 − |score_primary − score_secondary|`. All three values now match the formula.
+
+### 12. Recalibration Cost Nuance → ✅ FIXED
+Section 5.5 now includes cost-benefit discussion and recommends deployment-specific analysis.
+
+### 13. Secondary Results Lead → ✅ FIXED
+Section 5.3 now leads with: "The secondary dataset is the more meaningful evaluation... We lead with these results."
 
 ---
 
-## 5. ~~SHAP Explainability Depth~~ ✅ ADDRESSED (v3.1)
+## Remaining Items (Acceptable for Current Scope)
 
-**Original Critique:** SHAP provides only global bar charts; no per-class or interaction analysis.
-
-**v3.1 Status:**
-- Paper expands SHAP discussion significantly (Section 5.6):
-  - Global feature importance with agronomic interpretation per feature
-  - Feature interaction insights (humidity × rainfall, K × N)
-  - GaussianNB accuracy-vs-calibration analysis
-- Per-class SHAP breakdowns and interaction values listed as limitation (Section 6.4, item 6) and future work
-- The current depth is appropriate for the paper scope; deeper analysis can follow
-
----
-
-## 6. ~~Hyperparameter Tuning~~ ✅ ADDRESSED (v3.1)
-
-**Original Critique:** All classifiers use fixed hyperparameters.
-
-**v3.1 Status:**
-- Acknowledged as limitation (Section 6.4, item 5)
-- Listed as future work with Optuna (Section 6.5, item 6)
-- Fixed hyperparameters are honest — the proposed system's 99.50%/91.25% results represent a lower bound
-- Paper correctly notes that tuning could narrow gaps between classifiers
-
----
-
-## Summary Table
-
-| # | Issue | v3.0 | v3.1 |
-|---|-------|------|------|
-| 1 | Data leakage in FS + scaling | ❌ Severe | ✅ Fixed (Pipeline per fold) |
-| 2 | Preprocessing choices | ⚠️ Minor | ✅ Addressed (scaling fixed, imputation in limitations) |
-| 3 | Class imbalance handling | ❌ Missing | ✅ Fixed (class_weight='balanced') |
-| 4 | Sensor degradation depth | ⚠️ Shallow | ✅ Addressed (recalibration guidelines + future work) |
-| 5 | SHAP depth | ⚠️ Basic | ✅ Addressed (expanded discussion + future work) |
-| 6 | Hyperparameter tuning | ❌ Missing | ✅ Addressed (in limitations + future work) |
+| Item | Status | Justification |
+|------|--------|---------------|
+| Dead code (add_class_imbalance) | Not removed | Utility function for future use |
+| SHAP depth (per-class, local) | Future work | Section 6.5/6.6 acknowledge |
+| Hyperparameter tuning | Future work | Section 6.5/6.6 acknowledge |
+| Noise-augmented training | Future work | Section 6.6, item 2 |
+| Second crop dataset for true cross-validation | Future work | Section 6.5, item 2 |
 
 ---
 
 ## Conclusion
 
-All six critique items from v3.0 are resolved or explicitly addressed in v3.1. The two critical issues (data leakage, class imbalance) are fixed in code and correctly described in the paper. The remaining items (SHAP depth, sensor degradation mitigation, hyperparameter tuning) are acknowledged as limitations with concrete future work directions — appropriate for the current study scope.
-
-The paper now honestly describes the methodology, positions the proposed system clearly, and provides actionable deployment guidance. No further technical blockers remain.
+All critical and major issues are resolved. The paper honestly describes its methodology, correctly frames its contributions, acknowledges limitations, and provides reproducible code. The remaining items are appropriate future work directions.
