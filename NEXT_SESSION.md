@@ -34,6 +34,6 @@
 ### Key Results (v3.1 — All Honest)
 - **Primary:** RF 99.50%±0.09%, κ=0.9948
 - **Secondary:** RF 91.25%±0.77%, κ=0.8364 (sec_mi_top_6)
-- **Friedman:** χ²=26.4, p<0.001 (significant)
-- **Robustness:** 96.64% (7d) → 43.82% (90d)
+- **Friedman:** χ²=32.32, p<0.001 (significant)
+- **Robustness:** 94.05% (7d) → 16.09% (90d)
 - **Cross-dataset:** P=0.804, N=0.367, K=0.293 consistency
