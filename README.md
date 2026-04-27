@@ -1,6 +1,8 @@
-# Crop-Research — Q1 Journal Pipeline v3.0
+# Crop-Research — Q2 Journal Pipeline v3.1
 
 **Dual-Dataset Design with Cross-Dataset Validation for Crop Recommendation**
+
+> **v3.1 (2026-04-27):** Leak-free `Pipeline(StandardScaler → SelectKBest(mutual_info) → Classifier)` per CV fold. `class_weight='balanced'` on RF/SVM/DT/LR. All results re-run with corrected methodology.
 
 ## Research Paper
 
@@ -24,7 +26,7 @@
 | Classes | 22 crop types (100 samples each — perfectly balanced) |
 | Nature | Semi-synthetic (augmented from Indian agricultural statistics) |
 
-### Secondary — Soil Fertility (REAL Lab Measurements) ✅ NEW
+### Secondary — Soil Fertility (REAL Lab Measurements)
 | Property | Value |
 |----------|-------|
 | Source | [Kaggle — Rahul Jaiswal](https://www.kaggle.com/datasets/rahuljaiswalonkaggle/soil-fertility-dataset) |
@@ -53,8 +55,8 @@ Crop-Research/
 │   ├── config.py                # Paths, hyperparams, dual-dataset config
 │   ├── data_loader.py           # Primary + Secondary dataset loading
 │   ├── preprocessing.py         # Scaling, encoding, outlier detection, missing handling
-│   ├── feature_selection.py     # 6 FS methods (leak-free, inside CV)
-│   ├── models.py                # 10 classifiers
+│   ├── feature_selection.py     # 6 FS methods + Pipeline-compatible selectors
+│   ├── models.py                # 10 classifiers (with class_weight='balanced')
 │   ├── evaluation.py            # Kappa, MCC, Brier, ECE, Friedman test
 │   ├── explainability.py        # SHAP + GaussianNB calibration
 │   ├── noise_injection.py       # Sensor degradation simulation
@@ -66,10 +68,10 @@ Crop-Research/
 │   ├── processed/
 │   └── checkpoints/
 ├── results/
-│   ├── figures/                 # Publication-quality PNG + PDF
-│   ├── tables/                  # CSV + LaTeX tables
-│   └── metrics/                 # JSON summaries
-├── models/                      # Trained model artifacts
+│   ├── figures/                 # Publication-quality PNG + PDF (30 files)
+│   ├── tables/                  # CSV + LaTeX tables (21 files)
+│   └── metrics/                 # JSON summaries (4 files)
+├── models/                      # Trained model artifacts (Pipeline objects)
 ├── logs/
 ├── requirements.txt
 └── README.md
@@ -81,25 +83,69 @@ Crop-Research/
 cd Crop-Research
 python3 pipeline.py --session 1   # Data acquisition + EDA (both datasets)
 python3 pipeline.py --session 2   # Preprocessing + descriptive FS
-python3 pipeline.py --session 3   # Nested CV training (leak-free)
+python3 pipeline.py --session 3   # Leak-free CV training (Pipeline per fold)
 python3 pipeline.py --session 4   # Evaluation + SHAP + calibration + cross-dataset
 python3 pipeline.py --session 5   # Paper artifacts
 python3 pipeline.py --all         # Run everything
 ```
 
-## Peer Review Fixes (v3.0)
+## Key Results (v3.1 — Leak-Free)
 
-| Critique | Fix | Status |
-|----------|-----|--------|
-| 2.1 Semi-synthetic dataset | Acknowledged + **real secondary** + degradation variants | ✅ |
-| 2.2 FS data leakage | FS inside CV loop via Pipeline | ✅ |
-| 2.3 Sensor degradation | Literature-grounded (Rana 2019, Lobnik 2011) | ✅ |
-| 3.1 Monolithic code | Modular `src/*.py` | ✅ |
-| 3.2 Redundant metrics | Kappa, MCC, Brier, ECE | ✅ |
-| 3.3 Interpretability | SHAP + NB calibration analysis | ✅ |
-| 4.1 **NEW** Generalisation | Cross-dataset validation on real secondary | ✅ |
+### Primary Dataset (22 crop classes)
 
-## Feature Selection Methods (6 + Consensus)
+| Classifier | Accuracy (all_7) | κ | MCC | Macro-F1 | ECE |
+|-----------|------------------|------|------|----------|------|
+| **Random Forest** | **0.9950 ± 0.0009** | **0.9948** | **0.9948** | **0.9950** | 0.0430 |
+| GaussianNB | 0.9945 ± 0.0023 | 0.9943 | 0.9943 | 0.9945 | 0.0069 |
+| LightGBM | 0.9918 ± 0.0053 | 0.9914 | 0.9914 | 0.9918 | 0.0068 |
+| XGBoost | 0.9909 ± 0.0032 | 0.9905 | 0.9905 | 0.9909 | 0.0136 |
+
+### Secondary Dataset (Real Soil Fertility — 3 classes, 11.28× imbalance)
+
+| Classifier | Accuracy (sec_mi_top_6) | κ | MCC | Macro-F1 | ECE |
+|-----------|------------------------|------|------|----------|------|
+| **Random Forest** | **0.9125 ± 0.0077** | **0.8364** | **0.8371** | **0.8185** | 0.0562 |
+| XGBoost | 0.9034 ± 0.0200 | 0.8200 | 0.8205 | 0.7932 | 0.0755 |
+| LightGBM | 0.9034 ± 0.0183 | 0.8188 | 0.8197 | 0.7727 | 0.0849 |
+| GradientBoosting | 0.8932 ± 0.0174 | 0.8002 | 0.8007 | 0.7659 | 0.0954 |
+
+### Feature Ablation (Primary — MI per fold)
+
+| Subset | Features | Best Classifier | Accuracy | Drop vs all_7 |
+|--------|----------|----------------|----------|--------------|
+| all_7 | All 7 | RF | 0.9950 | — |
+| mi_top_5 | MI top-5 per fold | RF | 0.9905 | -0.45% |
+| mi_top_4 | MI top-4 per fold | RF | 0.9782 | -1.68% |
+| mi_top_3 | MI top-3 per fold | RF | 0.9645 | -3.05% |
+
+### Sensor Degradation Robustness
+
+| Scenario | Deployment | Accuracy | κ | Brier |
+|----------|-----------|----------|------|-------|
+| Fresh | 0 days | 0.9950 | 0.9948 | 0.0007 |
+| Mild | 7 days | 0.9664 | 0.9648 | 0.0039 |
+| Moderate | 30 days | 0.8177 | 0.8090 | 0.0138 |
+| Severe | 90 days | 0.4382 | 0.4114 | 0.0331 |
+
+---
+
+## Methodology (v3.1)
+
+### Leak-Free Cross-Validation
+Each classifier is wrapped in an sklearn `Pipeline`:
+```
+Pipeline(StandardScaler → SelectKBest(mutual_info, k=N) → Classifier)
+```
+- **Scaler** is fit on each training fold only (no global scaling leakage)
+- **Feature selection** is performed per fold using Mutual Information (no global pre-selection leakage)
+- **Ablation** tests different k values (7, 5, 4, 3) with MI re-ranking each fold
+- Outer 5-fold StratifiedKFold for unbiased evaluation
+
+### Class Imbalance Handling
+- `class_weight='balanced'` applied to: Random Forest, SVM-RBF, Decision Tree, Logistic Regression
+- Automatically adjusts class weights inversely proportional to class frequency
+
+### Feature Selection Methods (6 + Consensus — Descriptive Only)
 1. Mutual Information
 2. Chi-Square Test
 3. Recursive Feature Elimination (RFE)
@@ -108,45 +154,43 @@ python3 pipeline.py --all         # Run everything
 6. Random Forest Importance
 7. **Consensus Ranking** (normalized mean across all methods)
 
-## Classifiers (10)
+> **Note:** Consensus rankings are used for descriptive analysis only. The actual CV training uses per-fold MI selection to prevent data leakage.
+
+### Classifiers (10)
 Random Forest · SVM-RBF · KNN · Decision Tree · Gradient Boosting · XGBoost · LightGBM · Logistic Regression · MLP · GaussianNB
 
 ---
 
-## Target Journals (SCI / Scopus Indexed Only)
+## Peer Review Fixes (v3.0 → v3.1)
 
-### Tier 1 — SCI Indexed (High Impact)
-| Journal | Publisher | IF | APC | Review | Scope |
+| Critique | Fix | Status |
+|----------|-----|--------|
+| 2.1 Semi-synthetic dataset | Acknowledged + real secondary + degradation variants | ✅ |
+| 2.2 FS data leakage | **v3.1:** Pipeline with SelectKBest per CV fold | ✅ |
+| 2.3 Sensor degradation | Literature-grounded (Rana 2019, Lobnik 2011) | ✅ |
+| 3.1 Monolithic code | Modular `src/*.py` | ✅ |
+| 3.2 Redundant metrics | Kappa, MCC, Brier, ECE | ✅ |
+| 3.3 Interpretability | SHAP + NB calibration analysis | ✅ |
+| 3.4 Class imbalance | **v3.1:** `class_weight='balanced'` on RF/SVM/DT/LR | ✅ |
+| 4.1 Generalisation | Cross-dataset validation on real secondary | ✅ |
+| **NEW** Scaling leakage | **v3.1:** Scaler fit per fold via Pipeline | ✅ |
+
+---
+
+## Target Journals (Q2 — SCI / Scopus Indexed)
+
+| Journal | Publisher | IF | APC | Review | Notes |
 |---------|-----------|-----|-----|--------|-------|
-| **Computers and Electronics in Agriculture** | Elsevier | 8.3 | ~₹30,000 | 2-4 months | Agricultural ML, precision farming |
-| **Computers in Biology and Medicine** | Elsevier | 7.7 | ~₹25,000 | 2-3 months | Applied ML in bio/agri |
-| **Expert Systems with Applications** | Elsevier | 8.5 | ~₹28,000 | 2-3 months | ML applications |
-| **Information Processing & Management** | Elsevier | 8.6 | ~₹26,000 | 2-4 months | Data processing, ML |
-| **Knowledge-Based Systems** | Elsevier | 8.8 | ~₹28,000 | 2-4 months | AI/ML methods |
-
-### Tier 2 — SCI Indexed (Moderate Impact, Faster)
-| Journal | Publisher | APC | Review | Notes |
-|---------|-----------|-----|--------|-------|
-| **IEEE Access** | IEEE | ~₹15,000 (Gold OA) | 4-6 weeks | Very fast, SCI indexed |
-| **PLOS ONE** | PLOS | ~₹20,000 | 2-3 months | Multidisciplinary, high acceptance |
-| **Heliyon** | Elsevier/Cell Press | Free APC | 1-2 months | SCI indexed, fast review |
-| **PeerJ Computer Science** | PeerJ | ~₹14,000 | 1-2 months | Open access, fast |
-| **Results in Engineering** | Elsevier | Free APC | 4-8 weeks | Engineering focus |
-
-### Tier 3 — Scopus Indexed (Fast, Low Cost)
-| Journal | Publisher | APC | Review |
-|---------|-----------|-----|--------|
-| **Array** | Elsevier | Free | 4-6 weeks |
-| **Engineering Applications of AI** | Elsevier | ~₹22,000 | 2-3 months |
-| **Applied Soft Computing** | Elsevier | ~₹25,000 | 2-3 months |
-| **Neural Computing and Applications** | Springer | ~₹20,000 | 2-4 months |
-| **Intelligent Systems with Applications** | Elsevier | Free | 4-8 weeks |
-| **Decision Analytics** | Springer | ~₹12,000 | 1-2 months |
+| **Heliyon** | Elsevier/Cell Press | ~4.0 | Free | 1-2 months | SCI indexed, fast, free |
+| **PeerJ Computer Science** | PeerJ | ~3.5 | ~₹14,000 | 1-2 months | Open access, fast |
+| **IEEE Access** | IEEE | ~3.9 | ~₹15,000 | 4-6 weeks | Gold OA, very fast |
+| **PLOS ONE** | PLOS | ~3.7 | ~₹20,000 | 2-3 months | Multidisciplinary |
+| **Array** | Elsevier | — | Free | 4-6 weeks | Scopus, free |
 
 ### 🏆 Recommended Submission Strategy
-1. **Primary target:** Computers and Electronics in Agriculture (best fit for agricultural ML)
-2. **Fast backup:** IEEE Access or Heliyon (if speed is critical)
-3. **Budget option:** Heliyon (free APC, SCI indexed, 1-2 month review)
+1. **Primary target:** Heliyon (free APC, SCI indexed, fast review)
+2. **Fast backup:** IEEE Access (4-6 weeks, gold OA)
+3. **Budget option:** PeerJ Computer Science (open access)
 
 ---
 
