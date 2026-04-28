@@ -147,7 +147,7 @@ Three degradation scenarios are generated: mild (7-day), moderate (30-day), and 
 
 RobustCrop is a modular, leak-free ML pipeline for crop recommendation, implemented using scikit-learn [@Pedregosa2011]. The key design principle is that **every preprocessing step observes only training data within each cross-validation fold**. The system architecture is illustrated in Figure 1.
 
-![System architecture of the RobustCrop pipeline showing the leak-free per-fold design.](01_primary_distributions.png){#fig:arch width="100%"}
+![Feature correlation heatmap of the primary dataset (Naive Bayes independence check).](03_primary_correlation.png){#fig:primary_corr width="100%"}
 
 ## Data Preprocessing
 
@@ -268,7 +268,9 @@ We integrate **Optuna** [@Akiba2019] for optional Bayesian hyperparameter tuning
 
 : Consensus feature ranking for the primary dataset. {#tbl:fs_primary}
 
-All six methods consistently rank **humidity** as the most discriminative feature, followed by **rainfall** and **potassium (K)**. The dominance of climate features over soil nutrients suggests that macro-environmental conditions are the primary driver of crop suitability.
+All six methods consistently rank **humidity** as the most discriminative feature, followed by **rainfall** and **potassium (K)** (Figure 4). The dominance of climate features over soil nutrients suggests that macro-environmental conditions are the primary driver of crop suitability.
+
+![Feature selection consensus ranking for the primary dataset across six methods.](08_feature_selection.png){#fig:fs_primary width="100%"}
 
 ### Secondary Dataset (12 features)
 
@@ -289,11 +291,17 @@ All six methods consistently rank **humidity** as the most discriminative featur
 
 : Consensus feature ranking for the secondary dataset. {#tbl:fs_secondary}
 
-For real soil fertility data, **micronutrients (Zn, Mn, Fe, B)** dominate — contrary to the primary dataset where macronutrients (N, P, K) are mid-ranked.
+For real soil fertility data, **micronutrients (Zn, Mn, Fe, B)** dominate (Figure 5) — contrary to the primary dataset where macronutrients (N, P, K) are mid-ranked.
+
+![Feature selection consensus ranking for the secondary dataset.](09_feature_selection_secondary.png){#fig:fs_secondary width="100%"}
 
 ![Feature distributions of the primary (semi-synthetic) crop recommendation dataset.](01_primary_distributions.png){#fig:primary_dist width="100%"}
 
 ![Feature distributions of the secondary (real) soil fertility dataset.](02_secondary_distributions.png){#fig:secondary_dist width="100%"}
+
+![Feature correlation heatmap of the secondary dataset.](04_secondary_correlation.png){#fig:secondary_corr width="100%"}
+
+![Class distribution comparison across both datasets.](05_class_distributions.png){#fig:class_dist width="100%"}
 
 ## Proposed System Performance — Primary Dataset
 
@@ -364,7 +372,9 @@ Reducing from 7 to 5 features causes only 0.45% degradation, enabling a **29% re
 
 : Proposed system robustness under literature-grounded monotonic sensor degradation. {#tbl:degradation}
 
-Performance degrades monotonically under sensor drift (Figure 5). The compounding effect of directional drift across correlated sensors explains the non-linear collapse.
+Performance degrades monotonically under sensor drift (Figure 9). The compounding effect of directional drift across correlated sensors explains the non-linear collapse.
+
+![Degradation comparison across sensor types and deployment durations.](06_degradation_comparison.png){#fig:degradation_comp width="100%"}
 
 **Practical recalibration guidance:** Weekly sensor recalibration maintains >94% accuracy; monthly recalibration is insufficient (70.41%). The steep degradation curve means that **weekly recalibration is mandatory** for deployment reliability.
 
@@ -388,7 +398,9 @@ SHAP analysis [@Lundberg2017] of the proposed Random Forest classifier provides 
 
 The dominance of climate features (humidity, rainfall) over soil nutrients indicates that **macro-environmental conditions are the primary driver of crop suitability**.
 
-![SHAP feature importance for the Random Forest classifier on the primary dataset.](11_shap_RandomForest.png){#fig:shap width="100%"}
+![SHAP feature importance for the Random Forest classifier on the primary dataset.](11_shap_RandomForest.png){#fig:shap_rf width="100%"}
+
+![SHAP feature importance for the GaussianNB classifier on the primary dataset.](11_shap_GaussianNB.png){#fig:shap_nb width="100%"}
 
 ## Cross-Dataset Feature Consistency
 
@@ -425,6 +437,8 @@ The proposed Random Forest pipeline consistently outperforms gradient boosting m
 For agricultural deployment, classification accuracy alone is insufficient. Our calibration analysis reveals that Random Forest is moderately well-calibrated (ECE = 0.0430) but tends toward overconfidence. LightGBM achieves the best calibration (ECE = 0.0068), making it preferred when probability estimates are critical. GaussianNB is poorly calibrated despite high accuracy, producing near-0/1 posteriors.
 
 ![Calibration curves for the proposed Random Forest classifier.](13_calibration.png){#fig:calibration width="100%"}
+
+![Per-class F1 score heatmap across all classifiers and datasets.](14_per_class_heatmap.png){#fig:perclass width="100%"}
 
 ## Practical Deployment Guidance
 
