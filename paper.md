@@ -1,26 +1,48 @@
 ---
-title: "RobustCrop: A Leak-Free Machine Learning Pipeline for Crop Recommendation with Sensor Degradation Analysis and Cross-Dataset Feature Consistency"
-author:
-  - name: Anuradha Brijwal
-    affiliation: "1"
-    corresponding: true
-    email: anuradha.brijwal@gurukul.edu.in
-  - name: Praveena Chaturvedi
-    affiliation: "1"
-affiliation:
-  - id: 1
-    name: "Department of Computer Science, Kanya Gurukul Campus Dehradun, Gurukul Kangri (Deemed to be University), Haridwar, Uttarakhand, India"
-date: "2026"
-journal: "Preprint"
-keywords: "Crop Recommendation, Feature Selection, Soil Nutrients, Precision Agriculture, Machine Learning, Sensor Degradation, SHAP Explainability, Cross-Dataset Analysis, Class Imbalance, Hyperparameter Tuning"
-abstract: |
-  Deploying machine learning for crop recommendation in real agricultural settings requires addressing three practical challenges overlooked by prior work: data leakage in preprocessing pipelines, class imbalance in real-world soil data, and over-reliance on semi-synthetic benchmarks without external validation. This paper proposes RobustCrop, a leak-free pipeline that encapsulates feature scaling, mutual-information-based feature selection, and classification within a single scikit-learn Pipeline per cross-validation fold, eliminating the information leakage that inflates accuracy in prior studies. A BalWeightWrapper provides sample_weight='balanced' imbalance correction for all classifiers --- including those without native class_weight support (XGBoost, Gradient Boosting, MLP, KNN, GaussianNB) --- ensuring fair comparison. Optional Optuna-based nested CV (30 trials, 3-fold inner loop) enables systematic hyperparameter tuning. We evaluate on two datasets: a primary crop recommendation dataset (2,200 samples, 22 semi-synthetic classes) and a real-world soil fertility dataset (880 samples, 3 classes, 11.28:1 imbalance ratio). On real-world data, the proposed Random Forest pipeline achieves 91.25% ± 0.77% accuracy (κ = 0.8364, macro-F1 = 81.85%), outperforming nine benchmark classifiers. SHAP analysis identifies humidity and rainfall as dominant predictors, with potassium and nitrogen as key soil nutrient differentiators. Literature-grounded sensor degradation analysis under monotonic drift shows decay from 94.05% (7-day) to 16.09% (90-day drift), establishing that weekly recalibration maintains >94% accuracy. Cross-dataset feature consistency analysis reveals phosphorus as the most transferable feature (consistency = 0.804) while potassium importance is task-dependent (0.293). A Friedman test across classifiers confirms statistically significant differences (χ² = 32.32, p < 0.001). These findings provide actionable deployment guidance for ML-based crop recommendation in resource-constrained agricultural IoT settings.
 geometry: "margin=1in"
 fontsize: 11pt
 linestretch: 1.5
 numbersections: true
 toc: true
 ---
+
+\vspace{2em}
+
+# RobustCrop: A Leak-Free Machine Learning Pipeline for Crop Recommendation with Sensor Degradation Analysis and Cross-Dataset Feature Consistency
+
+\vspace{1.5em}
+
+**Anuradha Brijwal^1^ · Praveena Chaturvedi^2^**
+
+\vspace{0.5em}
+
+^1^ Research Scholar, Department of Computer Science, Kanya Gurukul Campus Dehradun
+
+^2^ Professor, Department of Computer Science, Kanya Gurukul Campus Dehradun
+
+\vspace{0.3em}
+
+*Gurukul Kangri (Deemed to be University), Haridwar, Uttarakhand, India*
+
+\vspace{1.5em}
+
+---
+
+\vspace{0.5em}
+
+## Abstract
+
+Deploying machine learning for crop recommendation in real agricultural settings requires addressing three practical challenges overlooked by prior work: data leakage in preprocessing pipelines, class imbalance in real-world soil data, and over-reliance on semi-synthetic benchmarks without external validation. This paper proposes **RobustCrop**, a leak-free pipeline that encapsulates feature scaling, mutual-information-based feature selection, and classification within a single scikit-learn Pipeline per cross-validation fold, eliminating the information leakage that inflates accuracy in prior studies. A **BalWeightWrapper** provides `sample_weight='balanced'` imbalance correction for all classifiers --- including those without native `class_weight` support (XGBoost, Gradient Boosting, MLP, KNN, GaussianNB) --- ensuring fair comparison. Optional **Optuna-based nested CV** (30 trials, 3-fold inner loop) enables systematic hyperparameter tuning. We evaluate on two datasets: a primary crop recommendation dataset (2,200 samples, 22 semi-synthetic classes) and a real-world soil fertility dataset (880 samples, 3 classes, 11.28:1 imbalance ratio). On real-world data, the proposed Random Forest pipeline achieves **91.25% ± 0.77% accuracy** (κ = 0.8364, macro-F1 = 81.85%), outperforming nine benchmark classifiers. SHAP analysis identifies humidity and rainfall as dominant predictors, with potassium and nitrogen as key soil nutrient differentiators. Literature-grounded sensor degradation analysis under monotonic drift shows decay from 94.05% (7-day) to 16.09% (90-day drift), establishing that weekly recalibration maintains >94% accuracy. Cross-dataset feature consistency analysis reveals phosphorus as the most transferable feature (consistency = 0.804) while potassium importance is task-dependent (0.293). A Friedman test across classifiers confirms statistically significant differences (χ² = 32.32, p < 0.001). These findings provide actionable deployment guidance for ML-based crop recommendation in resource-constrained agricultural IoT settings.
+
+\vspace{0.5em}
+
+**Keywords:** Crop Recommendation, Feature Selection, Soil Nutrients, Precision Agriculture, Machine Learning, Sensor Degradation, SHAP Explainability, Cross-Dataset Analysis, Class Imbalance, Hyperparameter Tuning
+
+\vspace{0.5em}
+
+---
+
+\vspace{1em}
 
 # Introduction
 
