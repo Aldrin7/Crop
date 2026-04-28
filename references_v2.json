@@ -13,8 +13,7 @@
     "issued": {"date-parts": [[2019]]},
     "container-title": "Proceedings of the 25th ACM SIGKDD International Conference on Knowledge Discovery & Data Mining",
     "page": "2623-2631",
-    "DOI": "10.1145/3292500.3330701",
-    "publisher": "ACM"
+    "DOI": "10.1145/3292500.3330701"
   },
   {
     "id": "Batista2004",
@@ -103,22 +102,6 @@
     "DOI": "10.1016/j.compag.2020.105758"
   },
   {
-    "id": "Fernandez2018",
-    "type": "book",
-    "title": "Learning from Imbalanced Data Sets",
-    "author": [
-      {"family": "Fernández", "given": "Alberto"},
-      {"family": "García", "given": "Salvador"},
-      {"family": "Galar", "given": "Mikel"},
-      {"family": "Prati", "given": "Ronaldo C."},
-      {"family": "Krawczyk", "given": "Bartosz"},
-      {"family": "Herrera", "given": "Francisco"}
-    ],
-    "issued": {"date-parts": [[2018]]},
-    "publisher": "Springer",
-    "DOI": "10.1007/978-3-319-98074-4"
-  },
-  {
     "id": "Friedman1937",
     "type": "article-journal",
     "title": "The Use of Ranks to Avoid the Assumption of Normality Implicit in the Analysis of Variance",
@@ -129,22 +112,6 @@
     "issue": "200",
     "page": "675-701",
     "DOI": "10.1080/01621459.1937.10503522"
-  },
-  {
-    "id": "Geurts2006",
-    "type": "article-journal",
-    "title": "Extremely Randomized Trees",
-    "author": [
-      {"family": "Geurts", "given": "Pierre"},
-      {"family": "Ernst", "given": "Damien"},
-      {"family": "Wehenkel", "given": "Louis"}
-    ],
-    "issued": {"date-parts": [[2006]]},
-    "container-title": "Machine Learning",
-    "volume": "63",
-    "issue": "1",
-    "page": "3-42",
-    "DOI": "10.1007/s10994-006-6226-1"
   },
   {
     "id": "Guo2017",
@@ -159,23 +126,6 @@
     "issued": {"date-parts": [[2017]]},
     "container-title": "Proceedings of the 34th International Conference on Machine Learning",
     "page": "1321-1330"
-  },
-  {
-    "id": "Guyon2002",
-    "type": "article-journal",
-    "title": "Gene Selection for Cancer Classification Using Support Vector Machines",
-    "author": [
-      {"family": "Guyon", "given": "Isabelle"},
-      {"family": "Weston", "given": "Jason"},
-      {"family": "Barnhill", "given": "Stephen"},
-      {"family": "Vapnik", "given": "Vladimir"}
-    ],
-    "issued": {"date-parts": [[2002]]},
-    "container-title": "Machine Learning",
-    "volume": "46",
-    "issue": "1-3",
-    "page": "389-422",
-    "DOI": "10.1023/A:1012487302797"
   },
   {
     "id": "Guyon2003",
@@ -248,7 +198,8 @@
     "container-title": "International Journal of Advanced Computer Science and Applications",
     "volume": "14",
     "issue": "5",
-    "page": "1-8"
+    "page": "1-8",
+    "DOI": "10.14569/IJACSA.2023.0140501"
   },
   {
     "id": "Kamilaris2018",
@@ -393,7 +344,8 @@
     "container-title": "International Journal of Computer Applications",
     "volume": "174",
     "issue": "25",
-    "page": "1-7"
+    "page": "1-7",
+    "DOI": "10.5120/ijca2021921462"
   },
   {
     "id": "NareshKumar2019",
@@ -408,7 +360,8 @@
     "container-title": "International Journal of Recent Technology and Engineering",
     "volume": "8",
     "issue": "3",
-    "page": "5940-5943"
+    "page": "5940-5943",
+    "DOI": "10.35940/ijrte.C5498.098319"
   },
   {
     "id": "Nemenyi1963",
@@ -417,37 +370,6 @@
     "author": [{"family": "Nemenyi", "given": "Peter"}],
     "issued": {"date-parts": [[1963]]},
     "publisher": "Princeton University"
-  },
-  {
-    "id": "Paszke2019",
-    "type": "paper-conference",
-    "title": "PyTorch: An Imperative Style, High-Performance Deep Learning Library",
-    "author": [
-      {"family": "Paszke", "given": "Adam"},
-      {"family": "Gross", "given": "Sam"},
-      {"family": "Massa", "given": "Francisco"},
-      {"family": "Lerer", "given": "Adam"},
-      {"family": "Bradbury", "given": "James"},
-      {"family": "Chanan", "given": "Gregory"},
-      {"family": "Killeen", "given": "Trevor"},
-      {"family": "Lin", "given": "Zeming"},
-      {"family": "Gimelshein", "given": "Natalia"},
-      {"family": "Antiga", "given": "Luca"},
-      {"family": "Desmaison", "given": "Alban"},
-      {"family": "Kopf", "given": "Andreas"},
-      {"family": "Yang", "given": "Edward"},
-      {"family": "DeVito", "given": "Zachary"},
-      {"family": "Raison", "given": "Martin"},
-      {"family": "Tejani", "given": "Alykhan"},
-      {"family": "Chilamkurthy", "given": "Sasank"},
-      {"family": "Steiner", "given": "Benoit"},
-      {"family": "Fang", "given": "Lu"},
-      {"family": "Bai", "given": "Junjie"},
-      {"family": "Chintala", "given": "Soumith"}
-    ],
-    "issued": {"date-parts": [[2019]]},
-    "container-title": "Advances in Neural Information Processing Systems",
-    "volume": "32"
   },
   {
     "id": "Pedregosa2011",
@@ -475,16 +397,6 @@
     "container-title": "Journal of Machine Learning Research",
     "volume": "12",
     "page": "2825-2830"
-  },
-  {
-    "id": "Platt1999",
-    "type": "inbook",
-    "title": "Probabilistic Outputs for Support Vector Machines and Comparisons to Regularized Likelihood Methods",
-    "author": [{"family": "Platt", "given": "John C."}],
-    "issued": {"date-parts": [[1999]]},
-    "container-title": "Advances in Large Margin Classifiers",
-    "page": "61-74",
-    "publisher": "MIT Press"
   },
   {
     "id": "Rana2019",
@@ -538,32 +450,8 @@
     "container-title": "International Journal of Information Technology",
     "volume": "15",
     "issue": "2",
-    "page": "891-900"
-  },
-  {
-    "id": "Tibshirani1996",
-    "type": "article-journal",
-    "title": "Regression Shrinkage and Selection via the Lasso",
-    "author": [{"family": "Tibshirani", "given": "Robert"}],
-    "issued": {"date-parts": [[1996]]},
-    "container-title": "Journal of the Royal Statistical Society: Series B (Methodological)",
-    "volume": "58",
-    "issue": "1",
-    "page": "267-288",
-    "DOI": "10.1111/j.2517-6161.1996.tb02080.x"
-  },
-  {
-    "id": "VanDerMaaten2008",
-    "type": "article-journal",
-    "title": "Visualizing Data using t-SNE",
-    "author": [
-      {"family": "Van der Maaten", "given": "Laurens"},
-      {"family": "Hinton", "given": "Geoffrey"}
-    ],
-    "issued": {"date-parts": [[2008]]},
-    "container-title": "Journal of Machine Learning Research",
-    "volume": "9",
-    "page": "2579-2605"
+    "page": "891-900",
+    "DOI": "10.1007/s41870-023-01191-4"
   },
   {
     "id": "Wolfert2017",
@@ -589,43 +477,5 @@
     "issued": {"date-parts": [[2023]]},
     "URL": "https://data.worldbank.org/indicator/SL.AGR.EMPL.ZS",
     "container-title": "World Bank Open Data"
-  },
-  {
-    "id": "Zadrozny2002",
-    "type": "paper-conference",
-    "title": "Transforming Classifier Scores into Accurate Multiclass Probability Estimates",
-    "author": [
-      {"family": "Zadrozny", "given": "Bianca"},
-      {"family": "Elkan", "given": "Charles"}
-    ],
-    "issued": {"date-parts": [[2002]]},
-    "container-title": "Proceedings of the 8th ACM SIGKDD International Conference on Knowledge Discovery & Data Mining",
-    "page": "694-699",
-    "DOI": "10.1145/775047.775151"
-  },
-  {
-    "id": "Zhang2012",
-    "type": "book",
-    "title": "Ensemble Machine Learning: Methods and Applications",
-    "author": [
-      {"family": "Zhang", "given": "Cha"},
-      {"family": "Ma", "given": "Yunqian"}
-    ],
-    "issued": {"date-parts": [[2012]]},
-    "publisher": "Springer",
-    "DOI": "10.1007/978-1-4419-9326-7"
-  },
-  {
-    "id": "NiculescuMizil2005",
-    "type": "paper-conference",
-    "title": "Predicting Good Probabilities with Supervised Learning",
-    "author": [
-      {"family": "Niculescu-Mizil", "given": "Alexandru"},
-      {"family": "Caruana", "given": "Rich"}
-    ],
-    "issued": {"date-parts": [[2005]]},
-    "container-title": "Proceedings of the 22nd International Conference on Machine Learning",
-    "page": "625-632",
-    "DOI": "10.1145/1102351.1102430"
   }
 ]

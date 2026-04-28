@@ -352,49 +352,39 @@ Future work should prioritize field-collected crop recommendation datasets, nois
 
 ## References
 
-1. Akiba, T., Sano, S., Yanase, T., Ohta, T., & Koyama, M. (2019). Optuna: A next-generation hyperparameter optimization framework. *Proceedings of the 25th ACM SIGKDD International Conference on Knowledge Discovery & Data Mining*, 2623–2631.
-2. Batista, G. E. A. P. A., Prati, R. C., & Monard, M. C. (2004). A study of the behavior of several methods for balancing machine learning training data. *ACM SIGKDD Explorations Newsletter*, 6(1), 20–29.
-3. Breiman, L. (2001). Random Forests. *Machine Learning*, 45(1), 5–32.
-4. Chandrashekar, G., & Sahin, F. (2014). A survey on feature selection methods. *Computers & Electrical Engineering*, 40(1), 16–28.
-5. Chawla, N. V., Bowyer, K. W., Hall, L. O., & Kegelmeyer, W. P. (2002). SMOTE: Synthetic Minority Over-sampling Technique. *Journal of Artificial Intelligence Research*, 16, 321–357.
-6. Chen, T., & Guestrin, C. (2016). XGBoost: A scalable tree boosting system. *Proceedings of the 22nd ACM SIGKDD International Conference on Knowledge Discovery & Data Mining*, 785–794.
-7. Elavarasan, D., & Vincent, D. R. (2020). Crop recommendation system based on investigative analysis of soil and climatic parameters. *Computers and Electronics in Agriculture*, 178, 105758.
-8. Friedman, M. (1937). The use of ranks to avoid the assumption of normality implicit in the analysis of variance. *Journal of the American Statistical Association*, 32(200), 675–701.
+1. Akiba, T., Sano, S., Yanase, T., Ohta, T., & Koyama, M. (2019). Optuna: A next-generation hyperparameter optimization framework. *Proceedings of the 25th ACM SIGKDD International Conference on Knowledge Discovery & Data Mining*, 2623–2631. https://doi.org/10.1145/3292500.3330701
+2. Batista, G. E. A. P. A., Prati, R. C., & Monard, M. C. (2004). A study of the behavior of several methods for balancing machine learning training data. *ACM SIGKDD Explorations Newsletter*, 6(1), 20–29. https://doi.org/10.1145/1007730.1007735
+3. Breiman, L. (2001). Random Forests. *Machine Learning*, 45(1), 5–32. https://doi.org/10.1023/A:1010933404324
+4. Chandrashekar, G., & Sahin, F. (2014). A survey on feature selection methods. *Computers & Electrical Engineering*, 40(1), 16–28. https://doi.org/10.1016/j.compeleceng.2013.11.024
+5. Chawla, N. V., Bowyer, K. W., Hall, L. O., & Kegelmeyer, W. P. (2002). SMOTE: Synthetic Minority Over-sampling Technique. *Journal of Artificial Intelligence Research*, 16, 321–357. https://doi.org/10.1613/jair.953
+6. Chen, T., & Guestrin, C. (2016). XGBoost: A scalable tree boosting system. *Proceedings of the 22nd ACM SIGKDD International Conference on Knowledge Discovery & Data Mining*, 785–794. https://doi.org/10.1145/2939672.2939785
+7. Elavarasan, D., & Vincent, D. R. (2020). Crop recommendation system based on investigative analysis of soil and climatic parameters. *Computers and Electronics in Agriculture*, 178, 105758. https://doi.org/10.1016/j.compag.2020.105758
+8. Friedman, M. (1937). The use of ranks to avoid the assumption of normality implicit in the analysis of variance. *Journal of the American Statistical Association*, 32(200), 675–701. https://doi.org/10.1080/01621459.1937.10503522
 9. Guo, C., Pleiss, G., Sun, Y., & Weinberger, K. Q. (2017). On calibration of modern neural networks. *Proceedings of the 34th International Conference on Machine Learning*, 1321–1330.
 10. Guyon, I., & Elisseeff, A. (2003). An introduction to variable and feature selection. *Journal of Machine Learning Research*, 3, 1157–1182.
-11. Han, H., Wang, W.-Y., & Mao, B.-H. (2005). Borderline-SMOTE: A new over-sampling method in imbalanced data sets learning. *Advances in Intelligent Computing*, 878–887.
-12. He, H., Bai, Y., Garcia, E. A., & Li, S. (2008). ADASYN: Adaptive synthetic sampling approach for imbalanced learning. *IEEE International Joint Conference on Neural Networks*, 1322–1328.
-13. Jha, K., Doshi, A., Patel, P., & Shah, M. (2019). A comprehensive review on automation in agriculture using artificial intelligence. *Artificial Intelligence in Agriculture*, 2, 1–12.
-14. Kamhawy, E., Elsayed, S., & El-Bendary, N. (2023). Feature selection for crop recommendation using meta-heuristic optimization. *International Journal of Advanced Computer Science and Applications*, 14(5), 1–8.
-15. Kamilaris, A., & Prenafeta-Boldú, F. X. (2018). Deep learning in agriculture: A survey. *Computers and Electronics in Agriculture*, 147, 70–90.
-16. Kapoor, S., & Narayanan, A. (2023). Leakage and the reproducibility crisis in machine-learning-based science. *Patterns*, 4(9), 100804.
+11. Han, H., Wang, W.-Y., & Mao, B.-H. (2005). Borderline-SMOTE: A new over-sampling method in imbalanced data sets learning. *Advances in Intelligent Computing*, 878–887. https://doi.org/10.1007/11538059_91
+12. He, H., Bai, Y., Garcia, E. A., & Li, S. (2008). ADASYN: Adaptive synthetic sampling approach for imbalanced learning. *IEEE International Joint Conference on Neural Networks*, 1322–1328. https://doi.org/10.1109/IJCNN.2008.4633969
+13. Jha, K., Doshi, A., Patel, P., & Shah, M. (2019). A comprehensive review on automation in agriculture using artificial intelligence. *Artificial Intelligence in Agriculture*, 2, 1–12. https://doi.org/10.1016/j.aiia.2019.07.002
+14. Kamhawy, E., Elsayed, S., & El-Bendary, N. (2023). Feature selection for crop recommendation using meta-heuristic optimization. *International Journal of Advanced Computer Science and Applications*, 14(5), 1–8. https://doi.org/10.14569/IJACSA.2023.0140501
+15. Kamilaris, A., & Prenafeta-Boldú, F. X. (2018). Deep learning in agriculture: A survey. *Computers and Electronics in Agriculture*, 147, 70–90. https://doi.org/10.1016/j.compag.2018.02.016
+16. Kapoor, S., & Narayanan, A. (2023). Leakage and the reproducibility crisis in machine-learning-based science. *Patterns*, 4(9), 100804. https://doi.org/10.1016/j.patter.2023.100804
 17. Ke, G., Meng, Q., Finley, T., Wang, T., Chen, W., Ma, W., ... & Liu, T.-Y. (2017). LightGBM: A highly efficient gradient boosting decision tree. *Advances in Neural Information Processing Systems*, 30.
 18. Kohavi, R. (1995). A study of cross-validation and bootstrap for accuracy estimation and model selection. *Proceedings of the 14th International Joint Conference on Artificial Intelligence*, 1137–1143.
-19. Krawczyk, B. (2016). Learning from imbalanced data: Open challenges and future directions. *Progress in Artificial Intelligence*, 5(4), 221–232.
-20. Liakos, K. G., Busato, P., Moshou, D., Pearson, S., & Bochtis, D. (2018). Machine learning in agriculture: A review. *Sensors*, 18(8), 2674.
-21. Lobnik, A., Oćwieja, M., & Križaj, D. (2011). Long-term stability of pH sensors. *Sensors and Actuators B*, 156(2), 593–599.
+19. Krawczyk, B. (2016). Learning from imbalanced data: Open challenges and future directions. *Progress in Artificial Intelligence*, 5(4), 221–232. https://doi.org/10.1007/s13748-016-0094-0
+20. Liakos, K. G., Busato, P., Moshou, D., Pearson, S., & Bochtis, D. (2018). Machine learning in agriculture: A review. *Sensors*, 18(8), 2674. https://doi.org/10.3390/s18082674
+21. Lobnik, A., Oćwieja, M., & Križaj, D. (2011). Long-term stability of pH sensors. *Sensors and Actuators B*, 156(2), 593–599. https://doi.org/10.1016/j.snb.2011.02.035
 22. Lundberg, S. M., & Lee, S.-I. (2017). A unified approach to interpreting model predictions. *Advances in Neural Information Processing Systems*, 30.
-23. Martínez, M. A., Laguna, A., & Vicente, J. (2007). Tipping-bucket rain gauge accuracy. *Hydrology and Earth System Sciences*, 11(2), 883–894.
-24. Nabwire, S., Mwangi, R. W., & Ikoha, A. P. (2021). A review of machine learning techniques for crop recommendation. *International Journal of Computer Applications*, 174(25), 1–7.
-25. Naresh Kumar, N., Jothi, K., & Mohan, V. (2019). Crop recommendation system using machine learning techniques. *International Journal of Recent Technology and Engineering*, 8(3), 5940–5943.
+23. Martínez, M. A., Laguna, A., & Vicente, J. (2007). Tipping-bucket rain gauge accuracy. *Hydrology and Earth System Sciences*, 11(2), 883–894. https://doi.org/10.5194/hess-11-883-2007
+24. Nabwire, S., Mwangi, R. W., & Ikoha, A. P. (2021). A review of machine learning techniques for crop recommendation. *International Journal of Computer Applications*, 174(25), 1–7. https://doi.org/10.5120/ijca2021921462
+25. Naresh Kumar, N., Jothi, K., & Mohan, V. (2019). Crop recommendation system using machine learning techniques. *International Journal of Recent Technology and Engineering*, 8(3), 5940–5943. https://doi.org/10.35940/ijrte.C5498.098319
 26. Nemenyi, P. (1963). Distribution-free multiple comparisons. *PhD dissertation, Princeton University*.
-27. Paszke, A., Gross, S., Massa, F., Lerer, A., Bradbury, J., Chanan, G., ... & Chintala, S. (2019). PyTorch: An imperative style, high-performance deep learning library. *Advances in Neural Information Processing Systems*, 32.
-28. Pedregosa, F., et al. (2011). Scikit-learn: Machine learning in Python. *Journal of Machine Learning Research*, 12, 2825–2830.
-29. Platt, J. C. (1999). Probabilistic outputs for support vector machines and comparisons to regularized likelihood methods. *Advances in Large Margin Classifiers*, 61–74.
-30. Rana, S. S., Bhargava, R., & Sharma, R. (2019). IoT-based smart agriculture sensor networks. *IEEE Access*, 7, 155274–155291.
-31. Sensirion AG (2022). *SHT4x datasheet: Digital humidity and temperature sensor*. Sensirion.
-32. Shah, K., Patel, H., & Jain, A. (2022). Crop recommendation using machine learning. *International Journal of Engineering Trends and Technology*, 70(3), 134–142.
-33. Suresh, S., Priya, S., & Rajkumar, S. (2023). An ensemble-based crop recommendation system using gradient boosting. *International Journal of Information Technology*, 15(2), 891–900.
-34. Tibshirani, R. (1996). Regression shrinkage and selection via the lasso. *Journal of the Royal Statistical Society: Series B*, 58(1), 267–288.
-35. Van der Maaten, L., & Hinton, G. (2008). Visualizing data using t-SNE. *Journal of Machine Learning Research*, 9, 2579–2605.
-36. Wolfert, S., Ge, L., Verdouw, C., & Bogaardt, M.-J. (2017). Big data in smart farming: A review. *Agricultural Systems*, 153, 69–80.
-37. World Bank (2023). *Employment in agriculture (% of total employment)*. World Bank Open Data.
-38. Zhang, C., & Ma, Y. (Eds.) (2012). *Ensemble machine learning: Methods and applications*. Springer.
-39. Zadrozny, B., & Elkan, C. (2002). Transforming classifier scores into accurate multiclass probability estimates. *Proceedings of the 8th ACM SIGKDD International Conference on Knowledge Discovery & Data Mining*, 694–699.
-40. Geurts, P., Ernst, D., & Wehenkel, L. (2006). Extremely randomized trees. *Machine Learning*, 63(1), 3–42.
-41. Fernández, A., García, S., Galar, M., Prati, R. C., Krawczyk, B., & Herrera, F. (2018). *Learning from imbalanced data sets*. Springer.
-42. Niculescu-Mizil, A., & Caruana, R. (2005). Predicting good probabilities with supervised learning. *Proceedings of the 22nd International Conference on Machine Learning*, 625–632.
-43. Guyon, I., Weston, J., Barnhill, S., & Vapnik, V. (2002). Gene selection for cancer classification using support vector machines. *Machine Learning*, 46(1-3), 389–422.
+27. Pedregosa, F., et al. (2011). Scikit-learn: Machine learning in Python. *Journal of Machine Learning Research*, 12, 2825–2830.
+28. Rana, S. S., Bhargava, R., & Sharma, R. (2019). IoT-based smart agriculture sensor networks. *IEEE Access*, 7, 155274–155291. https://doi.org/10.1109/ACCESS.2019.2949363
+29. Sensirion AG (2022). *SHT4x datasheet: Digital humidity and temperature sensor*. Sensirion. https://sensirion.com/products/catalog/SHT4x/
+30. Shah, K., Patel, H., & Jain, A. (2022). Crop recommendation using machine learning. *International Journal of Engineering Trends and Technology*, 70(3), 134–142. https://doi.org/10.14445/22315381/IJETT-V70I3P214
+31. Suresh, S., Priya, S., & Rajkumar, S. (2023). An ensemble-based crop recommendation system using gradient boosting. *International Journal of Information Technology*, 15(2), 891–900. https://doi.org/10.1007/s41870-023-01191-4
+32. Wolfert, S., Ge, L., Verdouw, C., & Bogaardt, M.-J. (2017). Big data in smart farming: A review. *Agricultural Systems*, 153, 69–80. https://doi.org/10.1016/j.agsy.2017.01.023
+33. World Bank (2023). *Employment in agriculture (% of total employment)*. World Bank Open Data. https://data.worldbank.org/indicator/SL.AGR.EMPL.ZS
 
 ---
 
