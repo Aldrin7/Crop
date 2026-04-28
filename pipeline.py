@@ -709,14 +709,18 @@ def _save_training_summary(all_results):
     for idx, (subsets, title) in enumerate([(primary_subsets, 'Primary'),
                                             (secondary_subsets, 'Secondary (Real)')]):
         ax = axes[idx]
+        all_clfs = []
         for subset in subsets:
             clfs, vals = [], []
             for clf, r in all_results[subset].items():
                 if 'error' not in r:
                     clfs.append(clf); vals.append(r['accuracy_mean'])
+                    if clf not in all_clfs:
+                        all_clfs.append(clf)
             if vals:
                 ax.plot(clfs, vals, 'o-', label=subset, markersize=6)
-        ax.set_xticklabels(clfs, rotation=45, ha='right', fontsize=8)
+        if all_clfs:
+            ax.set_xticklabels(all_clfs, rotation=45, ha='right', fontsize=8)
         ax.set_ylabel('Accuracy'); ax.set_title(f'{title} — Accuracy', fontweight='bold')
         ax.legend(); ax.grid(True, alpha=0.3)
     fig.suptitle('Leak-Free CV Results', fontsize=14, fontweight='bold')

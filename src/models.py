@@ -58,10 +58,15 @@ class BalWeightWrapper(BaseEstimator, ClassifierMixin):
     def __getattr__(self, name):
         # Delegate attribute access to the inner estimator for introspection
         # (e.g. feature_importances_, estimators_, coef_)
+        # Guard: during unpickling or if __init__ hasn't run yet, self.estimator
+        # may not exist, which would cause infinite recursion.
         try:
-            return super().__getattribute__(name)
+            estimator = object.__getattribute__(self, 'estimator')
         except AttributeError:
-            return getattr(self.estimator, name)
+            raise AttributeError(
+                f"'{type(self).__name__}' object has no attribute '{name}' "
+                f"(and 'estimator' is not yet set — possible unpickling issue)")
+        return getattr(estimator, name)
 
 
 def get_classifiers():
