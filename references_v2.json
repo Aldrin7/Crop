@@ -1,0 +1,631 @@
+[
+  {
+    "id": "Akiba2019",
+    "type": "paper-conference",
+    "title": "Optuna: A Next-generation Hyperparameter Optimization Framework",
+    "author": [
+      {"family": "Akiba", "given": "Takuya"},
+      {"family": "Sano", "given": "Shotaro"},
+      {"family": "Yanase", "given": "Toshihiko"},
+      {"family": "Ohta", "given": "Takeru"},
+      {"family": "Koyama", "given": "Masanori"}
+    ],
+    "issued": {"date-parts": [[2019]]},
+    "container-title": "Proceedings of the 25th ACM SIGKDD International Conference on Knowledge Discovery & Data Mining",
+    "page": "2623-2631",
+    "DOI": "10.1145/3292500.3330701",
+    "publisher": "ACM"
+  },
+  {
+    "id": "Batista2004",
+    "type": "article-journal",
+    "title": "A Study of the Behavior of Several Methods for Balancing Machine Learning Training Data",
+    "author": [
+      {"family": "Batista", "given": "Gustavo E. A. P. A."},
+      {"family": "Prati", "given": "Ronaldo C."},
+      {"family": "Monard", "given": "Maria Carolina"}
+    ],
+    "issued": {"date-parts": [[2004]]},
+    "container-title": "ACM SIGKDD Explorations Newsletter",
+    "volume": "6",
+    "issue": "1",
+    "page": "20-29",
+    "DOI": "10.1145/1007730.1007735"
+  },
+  {
+    "id": "Breiman2001",
+    "type": "article-journal",
+    "title": "Random Forests",
+    "author": [{"family": "Breiman", "given": "Leo"}],
+    "issued": {"date-parts": [[2001]]},
+    "container-title": "Machine Learning",
+    "volume": "45",
+    "issue": "1",
+    "page": "5-32",
+    "DOI": "10.1023/A:1010933404324"
+  },
+  {
+    "id": "Chandrashekar2014",
+    "type": "article-journal",
+    "title": "A Survey on Feature Selection Methods",
+    "author": [
+      {"family": "Chandrashekar", "given": "Girish"},
+      {"family": "Sahin", "given": "Ferat"}
+    ],
+    "issued": {"date-parts": [[2014]]},
+    "container-title": "Computers & Electrical Engineering",
+    "volume": "40",
+    "issue": "1",
+    "page": "16-28",
+    "DOI": "10.1016/j.compeleceng.2013.11.024"
+  },
+  {
+    "id": "Chawla2002",
+    "type": "article-journal",
+    "title": "SMOTE: Synthetic Minority Over-sampling Technique",
+    "author": [
+      {"family": "Chawla", "given": "Nitesh V."},
+      {"family": "Bowyer", "given": "Kevin W."},
+      {"family": "Hall", "given": "Lawrence O."},
+      {"family": "Kegelmeyer", "given": "W. Philip"}
+    ],
+    "issued": {"date-parts": [[2002]]},
+    "container-title": "Journal of Artificial Intelligence Research",
+    "volume": "16",
+    "page": "321-357",
+    "DOI": "10.1613/jair.953"
+  },
+  {
+    "id": "Chen2016",
+    "type": "paper-conference",
+    "title": "XGBoost: A Scalable Tree Boosting System",
+    "author": [
+      {"family": "Chen", "given": "Tianqi"},
+      {"family": "Guestrin", "given": "Carlos"}
+    ],
+    "issued": {"date-parts": [[2016]]},
+    "container-title": "Proceedings of the 22nd ACM SIGKDD International Conference on Knowledge Discovery & Data Mining",
+    "page": "785-794",
+    "DOI": "10.1145/2939672.2939785"
+  },
+  {
+    "id": "Elavarasan2020",
+    "type": "article-journal",
+    "title": "Crop Recommendation System Based on Investigative Analysis of Soil and Climatic Parameters",
+    "author": [
+      {"family": "Elavarasan", "given": "D."},
+      {"family": "Vincent", "given": "D. R."}
+    ],
+    "issued": {"date-parts": [[2020]]},
+    "container-title": "Computers and Electronics in Agriculture",
+    "volume": "178",
+    "page": "105758",
+    "DOI": "10.1016/j.compag.2020.105758"
+  },
+  {
+    "id": "Fernandez2018",
+    "type": "book",
+    "title": "Learning from Imbalanced Data Sets",
+    "author": [
+      {"family": "Fernández", "given": "Alberto"},
+      {"family": "García", "given": "Salvador"},
+      {"family": "Galar", "given": "Mikel"},
+      {"family": "Prati", "given": "Ronaldo C."},
+      {"family": "Krawczyk", "given": "Bartosz"},
+      {"family": "Herrera", "given": "Francisco"}
+    ],
+    "issued": {"date-parts": [[2018]]},
+    "publisher": "Springer",
+    "DOI": "10.1007/978-3-319-98074-4"
+  },
+  {
+    "id": "Friedman1937",
+    "type": "article-journal",
+    "title": "The Use of Ranks to Avoid the Assumption of Normality Implicit in the Analysis of Variance",
+    "author": [{"family": "Friedman", "given": "Milton"}],
+    "issued": {"date-parts": [[1937]]},
+    "container-title": "Journal of the American Statistical Association",
+    "volume": "32",
+    "issue": "200",
+    "page": "675-701",
+    "DOI": "10.1080/01621459.1937.10503522"
+  },
+  {
+    "id": "Geurts2006",
+    "type": "article-journal",
+    "title": "Extremely Randomized Trees",
+    "author": [
+      {"family": "Geurts", "given": "Pierre"},
+      {"family": "Ernst", "given": "Damien"},
+      {"family": "Wehenkel", "given": "Louis"}
+    ],
+    "issued": {"date-parts": [[2006]]},
+    "container-title": "Machine Learning",
+    "volume": "63",
+    "issue": "1",
+    "page": "3-42",
+    "DOI": "10.1007/s10994-006-6226-1"
+  },
+  {
+    "id": "Guo2017",
+    "type": "paper-conference",
+    "title": "On Calibration of Modern Neural Networks",
+    "author": [
+      {"family": "Guo", "given": "Chuan"},
+      {"family": "Pleiss", "given": "Geoff"},
+      {"family": "Sun", "given": "Yu"},
+      {"family": "Weinberger", "given": "Kilian Q."}
+    ],
+    "issued": {"date-parts": [[2017]]},
+    "container-title": "Proceedings of the 34th International Conference on Machine Learning",
+    "page": "1321-1330"
+  },
+  {
+    "id": "Guyon2002",
+    "type": "article-journal",
+    "title": "Gene Selection for Cancer Classification Using Support Vector Machines",
+    "author": [
+      {"family": "Guyon", "given": "Isabelle"},
+      {"family": "Weston", "given": "Jason"},
+      {"family": "Barnhill", "given": "Stephen"},
+      {"family": "Vapnik", "given": "Vladimir"}
+    ],
+    "issued": {"date-parts": [[2002]]},
+    "container-title": "Machine Learning",
+    "volume": "46",
+    "issue": "1-3",
+    "page": "389-422",
+    "DOI": "10.1023/A:1012487302797"
+  },
+  {
+    "id": "Guyon2003",
+    "type": "article-journal",
+    "title": "An Introduction to Variable and Feature Selection",
+    "author": [
+      {"family": "Guyon", "given": "Isabelle"},
+      {"family": "Elisseeff", "given": "André"}
+    ],
+    "issued": {"date-parts": [[2003]]},
+    "container-title": "Journal of Machine Learning Research",
+    "volume": "3",
+    "page": "1157-1182"
+  },
+  {
+    "id": "Han2005",
+    "type": "paper-conference",
+    "title": "Borderline-SMOTE: A New Over-sampling Method in Imbalanced Data Sets Learning",
+    "author": [
+      {"family": "Han", "given": "Hui"},
+      {"family": "Wang", "given": "Wen-Yuan"},
+      {"family": "Mao", "given": "Bing-Huan"}
+    ],
+    "issued": {"date-parts": [[2005]]},
+    "container-title": "Advances in Intelligent Computing",
+    "page": "878-887",
+    "DOI": "10.1007/11538059_91"
+  },
+  {
+    "id": "He2008",
+    "type": "paper-conference",
+    "title": "ADASYN: Adaptive Synthetic Sampling Approach for Imbalanced Learning",
+    "author": [
+      {"family": "He", "given": "Haibo"},
+      {"family": "Bai", "given": "Yang"},
+      {"family": "Garcia", "given": "Edwardo A."},
+      {"family": "Li", "given": "Shutao"}
+    ],
+    "issued": {"date-parts": [[2008]]},
+    "container-title": "IEEE International Joint Conference on Neural Networks",
+    "page": "1322-1328",
+    "DOI": "10.1109/IJCNN.2008.4633969"
+  },
+  {
+    "id": "Jha2019",
+    "type": "article-journal",
+    "title": "A Comprehensive Review on Automation in Agriculture Using Artificial Intelligence",
+    "author": [
+      {"family": "Jha", "given": "K."},
+      {"family": "Doshi", "given": "A."},
+      {"family": "Patel", "given": "P."},
+      {"family": "Shah", "given": "M."}
+    ],
+    "issued": {"date-parts": [[2019]]},
+    "container-title": "Artificial Intelligence in Agriculture",
+    "volume": "2",
+    "page": "1-12",
+    "DOI": "10.1016/j.aiia.2019.07.002"
+  },
+  {
+    "id": "Kamhawy2023",
+    "type": "article-journal",
+    "title": "Feature Selection for Crop Recommendation Using Meta-heuristic Optimization",
+    "author": [
+      {"family": "Kamhawy", "given": "E."},
+      {"family": "Elsayed", "given": "S."},
+      {"family": "El-Bendary", "given": "N."}
+    ],
+    "issued": {"date-parts": [[2023]]},
+    "container-title": "International Journal of Advanced Computer Science and Applications",
+    "volume": "14",
+    "issue": "5",
+    "page": "1-8"
+  },
+  {
+    "id": "Kamilaris2018",
+    "type": "article-journal",
+    "title": "Deep Learning in Agriculture: A Survey",
+    "author": [
+      {"family": "Kamilaris", "given": "Andreas"},
+      {"family": "Prenafeta-Boldú", "given": "Francesc X."}
+    ],
+    "issued": {"date-parts": [[2018]]},
+    "container-title": "Computers and Electronics in Agriculture",
+    "volume": "147",
+    "page": "70-90",
+    "DOI": "10.1016/j.compag.2018.02.016"
+  },
+  {
+    "id": "Kapoor2023",
+    "type": "article-journal",
+    "title": "Leakage and the Reproducibility Crisis in Machine-Learning-Based Science",
+    "author": [
+      {"family": "Kapoor", "given": "Sayash"},
+      {"family": "Narayanan", "given": "Arvind"}
+    ],
+    "issued": {"date-parts": [[2023]]},
+    "container-title": "Patterns",
+    "volume": "4",
+    "issue": "9",
+    "page": "100804",
+    "DOI": "10.1016/j.patter.2023.100804"
+  },
+  {
+    "id": "Ke2017",
+    "type": "paper-conference",
+    "title": "LightGBM: A Highly Efficient Gradient Boosting Decision Tree",
+    "author": [
+      {"family": "Ke", "given": "Guolin"},
+      {"family": "Meng", "given": "Qi"},
+      {"family": "Finley", "given": "Thomas"},
+      {"family": "Wang", "given": "Taifeng"},
+      {"family": "Chen", "given": "Wei"},
+      {"family": "Ma", "given": "Weidong"},
+      {"family": "Ye", "given": "Qiwei"},
+      {"family": "Liu", "given": "Tie-Yan"}
+    ],
+    "issued": {"date-parts": [[2017]]},
+    "container-title": "Advances in Neural Information Processing Systems",
+    "volume": "30"
+  },
+  {
+    "id": "Kohavi1995",
+    "type": "paper-conference",
+    "title": "A Study of Cross-Validation and Bootstrap for Accuracy Estimation and Model Selection",
+    "author": [{"family": "Kohavi", "given": "Ron"}],
+    "issued": {"date-parts": [[1995]]},
+    "container-title": "Proceedings of the 14th International Joint Conference on Artificial Intelligence",
+    "page": "1137-1143"
+  },
+  {
+    "id": "Krawczyk2016",
+    "type": "article-journal",
+    "title": "Learning from Imbalanced Data: Open Challenges and Future Directions",
+    "author": [{"family": "Krawczyk", "given": "Bartosz"}],
+    "issued": {"date-parts": [[2016]]},
+    "container-title": "Progress in Artificial Intelligence",
+    "volume": "5",
+    "issue": "4",
+    "page": "221-232",
+    "DOI": "10.1007/s13748-016-0094-0"
+  },
+  {
+    "id": "Liakos2018",
+    "type": "article-journal",
+    "title": "Machine Learning in Agriculture: A Review",
+    "author": [
+      {"family": "Liakos", "given": "Konstantinos G."},
+      {"family": "Busato", "given": "Patrizia"},
+      {"family": "Moshou", "given": "Dimitrios"},
+      {"family": "Pearson", "given": "Simon"},
+      {"family": "Bochtis", "given": "Dionysis"}
+    ],
+    "issued": {"date-parts": [[2018]]},
+    "container-title": "Sensors",
+    "volume": "18",
+    "issue": "8",
+    "page": "2674",
+    "DOI": "10.3390/s18082674"
+  },
+  {
+    "id": "Lobnik2011",
+    "type": "article-journal",
+    "title": "Long-term Stability of pH Sensors",
+    "author": [
+      {"family": "Lobnik", "given": "Aleš"},
+      {"family": "Oćwieja", "given": "Marcin"},
+      {"family": "Križaj", "given": "Darko"}
+    ],
+    "issued": {"date-parts": [[2011]]},
+    "container-title": "Sensors and Actuators B: Chemical",
+    "volume": "156",
+    "issue": "2",
+    "page": "593-599",
+    "DOI": "10.1016/j.snb.2011.02.035"
+  },
+  {
+    "id": "Lundberg2017",
+    "type": "paper-conference",
+    "title": "A Unified Approach to Interpreting Model Predictions",
+    "author": [
+      {"family": "Lundberg", "given": "Scott M."},
+      {"family": "Lee", "given": "Su-In"}
+    ],
+    "issued": {"date-parts": [[2017]]},
+    "container-title": "Advances in Neural Information Processing Systems",
+    "volume": "30"
+  },
+  {
+    "id": "Martinez2007",
+    "type": "article-journal",
+    "title": "Tipping-Bucket Rain Gauge Accuracy",
+    "author": [
+      {"family": "Martínez", "given": "M. A."},
+      {"family": "Laguna", "given": "A."},
+      {"family": "Vicente", "given": "J."}
+    ],
+    "issued": {"date-parts": [[2007]]},
+    "container-title": "Hydrology and Earth System Sciences",
+    "volume": "11",
+    "issue": "2",
+    "page": "883-894",
+    "DOI": "10.5194/hess-11-883-2007"
+  },
+  {
+    "id": "Nabwire2021",
+    "type": "article-journal",
+    "title": "A Review of Machine Learning Techniques for Crop Recommendation",
+    "author": [
+      {"family": "Nabwire", "given": "S."},
+      {"family": "Mwangi", "given": "R. W."},
+      {"family": "Ikoha", "given": "A. P."}
+    ],
+    "issued": {"date-parts": [[2021]]},
+    "container-title": "International Journal of Computer Applications",
+    "volume": "174",
+    "issue": "25",
+    "page": "1-7"
+  },
+  {
+    "id": "NareshKumar2019",
+    "type": "article-journal",
+    "title": "Crop Recommendation System Using Machine Learning Techniques",
+    "author": [
+      {"family": "Naresh Kumar", "given": "N."},
+      {"family": "Jothi", "given": "K."},
+      {"family": "Mohan", "given": "V."}
+    ],
+    "issued": {"date-parts": [[2019]]},
+    "container-title": "International Journal of Recent Technology and Engineering",
+    "volume": "8",
+    "issue": "3",
+    "page": "5940-5943"
+  },
+  {
+    "id": "Nemenyi1963",
+    "type": "phdthesis",
+    "title": "Distribution-free Multiple Comparisons",
+    "author": [{"family": "Nemenyi", "given": "Peter"}],
+    "issued": {"date-parts": [[1963]]},
+    "publisher": "Princeton University"
+  },
+  {
+    "id": "Paszke2019",
+    "type": "paper-conference",
+    "title": "PyTorch: An Imperative Style, High-Performance Deep Learning Library",
+    "author": [
+      {"family": "Paszke", "given": "Adam"},
+      {"family": "Gross", "given": "Sam"},
+      {"family": "Massa", "given": "Francisco"},
+      {"family": "Lerer", "given": "Adam"},
+      {"family": "Bradbury", "given": "James"},
+      {"family": "Chanan", "given": "Gregory"},
+      {"family": "Killeen", "given": "Trevor"},
+      {"family": "Lin", "given": "Zeming"},
+      {"family": "Gimelshein", "given": "Natalia"},
+      {"family": "Antiga", "given": "Luca"},
+      {"family": "Desmaison", "given": "Alban"},
+      {"family": "Kopf", "given": "Andreas"},
+      {"family": "Yang", "given": "Edward"},
+      {"family": "DeVito", "given": "Zachary"},
+      {"family": "Raison", "given": "Martin"},
+      {"family": "Tejani", "given": "Alykhan"},
+      {"family": "Chilamkurthy", "given": "Sasank"},
+      {"family": "Steiner", "given": "Benoit"},
+      {"family": "Fang", "given": "Lu"},
+      {"family": "Bai", "given": "Junjie"},
+      {"family": "Chintala", "given": "Soumith"}
+    ],
+    "issued": {"date-parts": [[2019]]},
+    "container-title": "Advances in Neural Information Processing Systems",
+    "volume": "32"
+  },
+  {
+    "id": "Pedregosa2011",
+    "type": "article-journal",
+    "title": "Scikit-learn: Machine Learning in Python",
+    "author": [
+      {"family": "Pedregosa", "given": "Fabian"},
+      {"family": "Varoquaux", "given": "Gaël"},
+      {"family": "Gramfort", "given": "Alexandre"},
+      {"family": "Michel", "given": "Vincent"},
+      {"family": "Thirion", "given": "Bertrand"},
+      {"family": "Grisel", "given": "Olivier"},
+      {"family": "Blondel", "given": "Mathieu"},
+      {"family": "Prettenhofer", "given": "Peter"},
+      {"family": "Weiss", "given": "Ron"},
+      {"family": "Dubourg", "given": "Vincent"},
+      {"family": "Vanderplas", "given": "Jake"},
+      {"family": "Passos", "given": "Alexandre"},
+      {"family": "Cournapeau", "given": "David"},
+      {"family": "Brucher", "given": "Matthieu"},
+      {"family": "Perrot", "given": "Matthieu"},
+      {"family": "Duchesnay", "given": "Édouard"}
+    ],
+    "issued": {"date-parts": [[2011]]},
+    "container-title": "Journal of Machine Learning Research",
+    "volume": "12",
+    "page": "2825-2830"
+  },
+  {
+    "id": "Platt1999",
+    "type": "inbook",
+    "title": "Probabilistic Outputs for Support Vector Machines and Comparisons to Regularized Likelihood Methods",
+    "author": [{"family": "Platt", "given": "John C."}],
+    "issued": {"date-parts": [[1999]]},
+    "container-title": "Advances in Large Margin Classifiers",
+    "page": "61-74",
+    "publisher": "MIT Press"
+  },
+  {
+    "id": "Rana2019",
+    "type": "article-journal",
+    "title": "IoT-based Smart Agriculture Sensor Networks",
+    "author": [
+      {"family": "Rana", "given": "S. S."},
+      {"family": "Bhargava", "given": "R."},
+      {"family": "Sharma", "given": "R."}
+    ],
+    "issued": {"date-parts": [[2019]]},
+    "container-title": "IEEE Access",
+    "volume": "7",
+    "page": "155274-155291",
+    "DOI": "10.1109/ACCESS.2019.2949363"
+  },
+  {
+    "id": "Sensirion2022",
+    "type": "article",
+    "title": "SHT4x Datasheet: Digital Humidity and Temperature Sensor",
+    "author": [{"literal": "Sensirion AG"}],
+    "issued": {"date-parts": [[2022]]},
+    "URL": "https://sensirion.com/products/catalog/SHT4x/"
+  },
+  {
+    "id": "Shah2022",
+    "type": "article-journal",
+    "title": "Crop Recommendation Using Machine Learning",
+    "author": [
+      {"family": "Shah", "given": "K."},
+      {"family": "Patel", "given": "H."},
+      {"family": "Jain", "given": "A."}
+    ],
+    "issued": {"date-parts": [[2022]]},
+    "container-title": "International Journal of Engineering Trends and Technology",
+    "volume": "70",
+    "issue": "3",
+    "page": "134-142",
+    "DOI": "10.14445/22315381/IJETT-V70I3P214"
+  },
+  {
+    "id": "Suresh2023",
+    "type": "article-journal",
+    "title": "An Ensemble-based Crop Recommendation System Using Gradient Boosting",
+    "author": [
+      {"family": "Suresh", "given": "S."},
+      {"family": "Priya", "given": "S."},
+      {"family": "Rajkumar", "given": "S."}
+    ],
+    "issued": {"date-parts": [[2023]]},
+    "container-title": "International Journal of Information Technology",
+    "volume": "15",
+    "issue": "2",
+    "page": "891-900"
+  },
+  {
+    "id": "Tibshirani1996",
+    "type": "article-journal",
+    "title": "Regression Shrinkage and Selection via the Lasso",
+    "author": [{"family": "Tibshirani", "given": "Robert"}],
+    "issued": {"date-parts": [[1996]]},
+    "container-title": "Journal of the Royal Statistical Society: Series B (Methodological)",
+    "volume": "58",
+    "issue": "1",
+    "page": "267-288",
+    "DOI": "10.1111/j.2517-6161.1996.tb02080.x"
+  },
+  {
+    "id": "VanDerMaaten2008",
+    "type": "article-journal",
+    "title": "Visualizing Data using t-SNE",
+    "author": [
+      {"family": "Van der Maaten", "given": "Laurens"},
+      {"family": "Hinton", "given": "Geoffrey"}
+    ],
+    "issued": {"date-parts": [[2008]]},
+    "container-title": "Journal of Machine Learning Research",
+    "volume": "9",
+    "page": "2579-2605"
+  },
+  {
+    "id": "Wolfert2017",
+    "type": "article-journal",
+    "title": "Big Data in Smart Farming: A Review",
+    "author": [
+      {"family": "Wolfert", "given": "Sjaak"},
+      {"family": "Ge", "given": "Lan"},
+      {"family": "Verdouw", "given": "Cor"},
+      {"family": "Bogaardt", "given": "Marie-José"}
+    ],
+    "issued": {"date-parts": [[2017]]},
+    "container-title": "Agricultural Systems",
+    "volume": "153",
+    "page": "69-80",
+    "DOI": "10.1016/j.agsy.2017.01.023"
+  },
+  {
+    "id": "WorldBank2023",
+    "type": "webpage",
+    "title": "Employment in Agriculture (% of Total Employment)",
+    "author": [{"literal": "World Bank"}],
+    "issued": {"date-parts": [[2023]]},
+    "URL": "https://data.worldbank.org/indicator/SL.AGR.EMPL.ZS",
+    "container-title": "World Bank Open Data"
+  },
+  {
+    "id": "Zadrozny2002",
+    "type": "paper-conference",
+    "title": "Transforming Classifier Scores into Accurate Multiclass Probability Estimates",
+    "author": [
+      {"family": "Zadrozny", "given": "Bianca"},
+      {"family": "Elkan", "given": "Charles"}
+    ],
+    "issued": {"date-parts": [[2002]]},
+    "container-title": "Proceedings of the 8th ACM SIGKDD International Conference on Knowledge Discovery & Data Mining",
+    "page": "694-699",
+    "DOI": "10.1145/775047.775151"
+  },
+  {
+    "id": "Zhang2012",
+    "type": "book",
+    "title": "Ensemble Machine Learning: Methods and Applications",
+    "author": [
+      {"family": "Zhang", "given": "Cha"},
+      {"family": "Ma", "given": "Yunqian"}
+    ],
+    "issued": {"date-parts": [[2012]]},
+    "publisher": "Springer",
+    "DOI": "10.1007/978-1-4419-9326-7"
+  },
+  {
+    "id": "NiculescuMizil2005",
+    "type": "paper-conference",
+    "title": "Predicting Good Probabilities with Supervised Learning",
+    "author": [
+      {"family": "Niculescu-Mizil", "given": "Alexandru"},
+      {"family": "Caruana", "given": "Rich"}
+    ],
+    "issued": {"date-parts": [[2005]]},
+    "container-title": "Proceedings of the 22nd International Conference on Machine Learning",
+    "page": "625-632",
+    "DOI": "10.1145/1102351.1102430"
+  }
+]

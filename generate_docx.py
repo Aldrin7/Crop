@@ -641,23 +641,35 @@ def build_document(md_text, output_path):
                 section_counter[1] = 0
                 section_counter[2] = 0
                 num = f"{section_counter[0]}"
+                # Strip existing numbering from content
+                clean_content = re.sub(r'^\d+\.?\d*\s*', '', content).strip()
+                if not clean_content:
+                    clean_content = content
                 p = doc.add_paragraph(style='Heading 1')
-                p.add_run(f"{num}. {replace_math_symbols(content)}")
+                p.add_run(f"{num}. {replace_math_symbols(clean_content)}")
             continue
 
         if btype == 'h2':
             section_counter[1] += 1
             section_counter[2] = 0
             num = f"{section_counter[0]}.{section_counter[1]}"
+            # Strip existing numbering from content (e.g. "1.1 Introduction" -> "Introduction")
+            clean_content = re.sub(r'^\d+\.?\d*\s*', '', content).strip()
+            if not clean_content:
+                clean_content = content
             p = doc.add_paragraph(style='Heading 2')
-            p.add_run(f"{num} {replace_math_symbols(content)}")
+            p.add_run(f"{num} {replace_math_symbols(clean_content)}")
             continue
 
         if btype == 'h3':
             section_counter[2] += 1
             num = f"{section_counter[0]}.{section_counter[1]}.{section_counter[2]}"
+            # Strip existing numbering from content (e.g. "2.1 Foo" -> "Foo")
+            clean_content = re.sub(r'^\d+\.?\d*\.?\d*\s*', '', content).strip()
+            if not clean_content:
+                clean_content = content
             p = doc.add_paragraph(style='Heading 3')
-            p.add_run(f"{num} {replace_math_symbols(content)}")
+            p.add_run(f"{num} {replace_math_symbols(clean_content)}")
             continue
 
         # ── Abstract ──
