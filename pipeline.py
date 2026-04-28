@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Crop Recommendation Pipeline v3.1
+Crop Recommendation Pipeline v3.2
 ============================================
 Dual-dataset design with cross-dataset feature consistency analysis:
   Primary:   Crop Recommendation (semi-synthetic, 2200 samples, 22 classes)
@@ -13,15 +13,20 @@ Fixes all peer-review critiques:
   3.1 — Modular codebase (src/*.py)
   3.2 — Cohen's Kappa, MCC, Brier, ECE (no redundant balanced metrics)
   3.3 — SHAP + GaussianNB calibration analysis
-  4.1 — NEW: Cross-dataset validation on shared feature space (N, P, K, pH)
+  4.1 — Cross-dataset feature consistency analysis on shared feature space (N, P, K)
+  5.1 — class_weight/sample_weight on ALL classifiers (BalWeightWrapper)
+  5.2 — Optuna hyperparameter tuning via nested CV (--tune flag)
+  5.3 — Dead code removed, deprecation warnings added
 
 Usage:
-  python pipeline.py --session 1   # Data & EDA (both datasets)
-  python pipeline.py --session 2   # Preprocessing + descriptive FS
-  python pipeline.py --session 3   # Training (5-fold stratified CV, leak-free Pipeline)
-  python pipeline.py --session 4   # Evaluation + SHAP + calibration + cross-dataset consistency
-  python pipeline.py --session 5   # Paper artifacts
+  python pipeline.py --session 1        # Data & EDA (both datasets)
+  python pipeline.py --session 2        # Preprocessing + descriptive FS
+  python pipeline.py --session 3        # Training (5-fold stratified CV, leak-free Pipeline)
+  python pipeline.py --session 3 --tune # Training with Optuna nested CV tuning
+  python pipeline.py --session 4        # Evaluation + SHAP + calibration + cross-dataset consistency
+  python pipeline.py --session 5        # Paper artifacts
   python pipeline.py --all
+  python pipeline.py --all --tune       # Full run with Optuna tuning
 """
 import sys, os, time, json, argparse, logging, warnings
 import numpy as np
@@ -41,16 +46,150 @@ from src.data_loader import (
 )
 from src.preprocessing import prepare_data, detect_outliers, handle_missing, encode_target
 from src.feature_selection import run_all_fs_methods, TopKFromScores, RFESelector
-from src.models import all_classifiers
+from src.models import all_classifiers, BalWeightWrapper
 from src.evaluation import compute_metrics, friedman_test, nemenyi_critical_difference
 from src.explainability import (compute_shap_values, analyze_gaussian_nb_calibration,
                                  correlation_violation_report)
 from src.noise_injection import degrade_dataset
 
+# Optional: Optuna for hyperparameter tuning
+try:
+    import optuna
+    optuna.logging.set_verbosity(optuna.logging.WARNING)
+    OPTUNA_AVAILABLE = True
+except ImportError:
+    OPTUNA_AVAILABLE = False
+
 warnings.filterwarnings('ignore')
 sns.set_theme(style='whitegrid', palette='husl', font_scale=1.1)
 
 log = None  # set in main()
+USE_OPTUNA = False  # set by --tune flag
+
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# OPTUNA HYPERPARAMETER TUNING (nested CV inner loop)
+# ═══════════════════════════════════════════════════════════════════════════════
+def _optuna_search_space(trial, clf_name):
+    """Return Optuna-suggested hyperparameters for a given classifier."""
+    from sklearn.ensemble import RandomForestClassifier, GradientBoostingClassifier
+    from sklearn.svm import SVC
+    from sklearn.neighbors import KNeighborsClassifier
+    from sklearn.tree import DecisionTreeClassifier
+    from sklearn.neural_network import MLPClassifier
+    from sklearn.linear_model import LogisticRegression
+
+    if clf_name == 'RandomForest':
+        return RandomForestClassifier(
+            n_estimators=trial.suggest_int('rf_n_estimators', 100, 500, step=50),
+            max_depth=trial.suggest_int('rf_max_depth', 5, 30, step=5),
+            min_samples_split=trial.suggest_int('rf_min_samples_split', 2, 20),
+            min_samples_leaf=trial.suggest_int('rf_min_samples_leaf', 1, 10),
+            class_weight='balanced', random_state=RANDOM_STATE, n_jobs=-1)
+    elif clf_name == 'SVM_RBF':
+        return SVC(
+            kernel='rbf',
+            C=trial.suggest_float('svm_C', 0.1, 100, log=True),
+            gamma=trial.suggest_float('svm_gamma', 1e-4, 1, log=True),
+            class_weight='balanced', random_state=RANDOM_STATE, probability=True)
+    elif clf_name == 'KNN':
+        return BalWeightWrapper(KNeighborsClassifier(
+            n_neighbors=trial.suggest_int('knn_n', 3, 21, step=2),
+            weights=trial.suggest_categorical('knn_weights', ['uniform', 'distance']),
+            n_jobs=-1))
+    elif clf_name == 'DecisionTree':
+        return DecisionTreeClassifier(
+            max_depth=trial.suggest_int('dt_max_depth', 3, 30, step=3),
+            min_samples_split=trial.suggest_int('dt_min_samples_split', 2, 20),
+            min_samples_leaf=trial.suggest_int('dt_min_samples_leaf', 1, 10),
+            class_weight='balanced', random_state=RANDOM_STATE)
+    elif clf_name == 'GradientBoosting':
+        return BalWeightWrapper(GradientBoostingClassifier(
+            n_estimators=trial.suggest_int('gb_n_estimators', 50, 300, step=50),
+            max_depth=trial.suggest_int('gb_max_depth', 3, 10),
+            learning_rate=trial.suggest_float('gb_lr', 0.01, 0.3, log=True),
+            subsample=trial.suggest_float('gb_subsample', 0.6, 1.0),
+            random_state=RANDOM_STATE))
+    elif clf_name == 'LogisticRegression':
+        return LogisticRegression(
+            max_iter=5000, solver='lbfgs',
+            C=trial.suggest_float('lr_C', 0.01, 100, log=True),
+            class_weight='balanced', random_state=RANDOM_STATE)
+    elif clf_name == 'MLP':
+        return BalWeightWrapper(MLPClassifier(
+            hidden_layer_sizes=(
+                trial.suggest_int('mlp_h1', 32, 256, step=32),
+                trial.suggest_int('mlp_h2', 16, 128, step=16),
+                trial.suggest_int('mlp_h3', 8, 64, step=8)),
+            max_iter=500, early_stopping=True, validation_fraction=0.15,
+            learning_rate_init=trial.suggest_float('mlp_lr', 1e-4, 1e-2, log=True),
+            random_state=RANDOM_STATE, batch_size=64))
+    elif clf_name == 'GaussianNB':
+        return BalWeightWrapper(GaussianNB(
+            var_smoothing=trial.suggest_float('gnb_var_smooth', 1e-10, 1e-6, log=True)))
+    elif clf_name == 'XGBoost':
+        import xgboost as xgb
+        return BalWeightWrapper(xgb.XGBClassifier(
+            n_estimators=trial.suggest_int('xgb_n_estimators', 100, 500, step=50),
+            max_depth=trial.suggest_int('xgb_max_depth', 3, 10),
+            learning_rate=trial.suggest_float('xgb_lr', 0.01, 0.3, log=True),
+            subsample=trial.suggest_float('xgb_subsample', 0.6, 1.0),
+            colsample_bytree=trial.suggest_float('xgb_colsample', 0.6, 1.0),
+            random_state=RANDOM_STATE, n_jobs=-1, eval_metric='mlogloss'))
+    elif clf_name == 'LightGBM':
+        import lightgbm as lgb
+        return lgb.LGBMClassifier(
+            n_estimators=trial.suggest_int('lgb_n_estimators', 100, 500, step=50),
+            max_depth=trial.suggest_int('lgb_max_depth', 3, 10),
+            learning_rate=trial.suggest_float('lgb_lr', 0.01, 0.3, log=True),
+            subsample=trial.suggest_float('lgb_subsample', 0.6, 1.0),
+            colsample_bytree=trial.suggest_float('lgb_colsample', 0.6, 1.0),
+            class_weight='balanced',
+            random_state=RANDOM_STATE, n_jobs=-1, verbose=-1)
+    else:
+        return None  # unknown classifier
+
+
+def _optuna_tune_classifier(clf_name, X_train, y_train, k_eff, n_total,
+                            n_trials=30, timeout=120):
+    """Run Optuna inner CV to find best hyperparameters for a classifier.
+    
+    Uses 3-fold stratified CV on the training fold to evaluate each trial.
+    Returns the best estimator (unfitted) with tuned hyperparameters.
+    """
+    from sklearn.model_selection import StratifiedKFold, cross_val_score
+    from sklearn.pipeline import Pipeline
+    from sklearn.preprocessing import StandardScaler
+    from sklearn.feature_selection import SelectKBest, mutual_info_classif
+    from sklearn.base import clone
+
+    if not OPTUNA_AVAILABLE:
+        log.warning("  Optuna not installed, using default hyperparameters")
+        return None
+
+    def objective(trial):
+        clf = _optuna_search_space(trial, clf_name)
+        if clf is None:
+            return 0.0
+        steps = [('scaler', StandardScaler())]
+        if k_eff < n_total:
+            steps.append(('selector', SelectKBest(mutual_info_classif, k=k_eff)))
+        steps.append(('clf', clf))
+        pipe = Pipeline(steps)
+        inner_cv = StratifiedKFold(n_splits=CV_INNER, shuffle=True,
+                                   random_state=RANDOM_STATE)
+        scores = cross_val_score(pipe, X_train, y_train, cv=inner_cv,
+                                 scoring='accuracy', n_jobs=1)
+        return scores.mean()
+
+    study = optuna.create_study(direction='maximize',
+                                sampler=optuna.samplers.TPESampler(seed=RANDOM_STATE))
+    study.optimize(objective, n_trials=n_trials, timeout=timeout, show_progress_bar=False)
+
+    # Build best estimator from best trial
+    best_clf = _optuna_search_space(study.best_trial, clf_name)
+    log.info(f"    Optuna best: acc={study.best_value:.4f}, params={study.best_params}")
+    return best_clf
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
@@ -432,6 +571,9 @@ def _train_classifiers(X_raw, y, classifiers, subset_name, all_results, best_mod
                        le=None, feature_cols=None, k=None):
     """Train all classifiers with LEAK-FREE CV: scaler + feature selection inside each fold.
 
+    When USE_OPTUNA is True, runs Optuna inner CV (nested CV) to tune
+    hyperparameters on each training fold.  Otherwise uses fixed defaults.
+
     Args:
         X_raw: Unscaled feature DataFrame/array (scaling done per-fold via Pipeline).
         y: Target labels.
@@ -458,16 +600,10 @@ def _train_classifiers(X_raw, y, classifiers, subset_name, all_results, best_mod
 
     subset_results = {}
     for clf_name, clf in classifiers.items():
-        log.info(f"  Training {clf_name} (k={k_eff}/{n_total})...")
+        tuning_note = " (Optuna tuned)" if USE_OPTUNA else ""
+        log.info(f"  Training {clf_name} (k={k_eff}/{n_total}){tuning_note}...")
         t0 = time.time()
         try:
-            # Build leak-free pipeline: scaler → feature selection → classifier
-            steps = [('scaler', StandardScaler())]
-            if k_eff < n_total:
-                steps.append(('selector', SelectKBest(mutual_info_classif, k=k_eff)))
-            steps.append(('clf', clone(clf)))
-            pipe = Pipeline(steps)
-
             outer_cv = StratifiedKFold(n_splits=CV_OUTER, shuffle=True,
                                        random_state=RANDOM_STATE)
             outer_scores, fold_metrics = [], []
@@ -477,7 +613,25 @@ def _train_classifiers(X_raw, y, classifiers, subset_name, all_results, best_mod
                 X_te = X_raw.iloc[test_idx] if hasattr(X_raw, 'iloc') else X_raw[test_idx]
                 y_tr, y_te = y[train_idx], y[test_idx]
 
-                fold_pipe = clone(pipe)
+                # Optionally tune hyperparameters on this training fold (nested CV)
+                if USE_OPTUNA:
+                    tuned_clf = _optuna_tune_classifier(
+                        clf_name, X_tr, y_tr, k_eff, n_total,
+                        n_trials=30, timeout=120)
+                    if tuned_clf is not None:
+                        fold_clf = tuned_clf
+                    else:
+                        fold_clf = clone(clf)
+                else:
+                    fold_clf = clone(clf)
+
+                # Build leak-free pipeline: scaler → feature selection → classifier
+                steps = [('scaler', StandardScaler())]
+                if k_eff < n_total:
+                    steps.append(('selector', SelectKBest(mutual_info_classif, k=k_eff)))
+                steps.append(('clf', fold_clf))
+                fold_pipe = Pipeline(steps)
+
                 fold_pipe.fit(X_tr, y_tr)
                 y_pred = fold_pipe.predict(X_te)
                 y_proba = (fold_pipe.predict_proba(X_te)
@@ -501,11 +655,24 @@ def _train_classifiers(X_raw, y, classifiers, subset_name, all_results, best_mod
                 'subset': subset_name,
                 'n_features': k_eff,
                 'selection_method': 'MI-per-fold' if k_eff < n_total else 'none',
+                'tuned': USE_OPTUNA,
             }
             subset_results[clf_name] = result
 
             # Train final pipeline on full data (for downstream use)
-            final_pipe = clone(pipe)
+            if USE_OPTUNA:
+                final_clf = _optuna_tune_classifier(
+                    clf_name, X_raw, y, k_eff, n_total,
+                    n_trials=30, timeout=120)
+                if final_clf is None:
+                    final_clf = clone(clf)
+            else:
+                final_clf = clone(clf)
+            final_steps = [('scaler', StandardScaler())]
+            if k_eff < n_total:
+                final_steps.append(('selector', SelectKBest(mutual_info_classif, k=k_eff)))
+            final_steps.append(('clf', final_clf))
+            final_pipe = Pipeline(final_steps)
             final_pipe.fit(X_raw, y)
             best_models[f"{subset_name}__{clf_name}"] = final_pipe
 
@@ -849,17 +1016,25 @@ def session5():
 # MAIN
 # ═══════════════════════════════════════════════════════════════════════════════
 def main():
-    global log
+    global log, USE_OPTUNA
     log = setup_logging()
-    parser = argparse.ArgumentParser(description='Crop Recommendation Pipeline v3.1')
+    parser = argparse.ArgumentParser(description='Crop Recommendation Pipeline v3.2')
     parser.add_argument('--session', type=int, choices=[1, 2, 3, 4, 5])
     parser.add_argument('--all', action='store_true')
+    parser.add_argument('--tune', action='store_true',
+                        help='Enable Optuna hyperparameter tuning (nested CV)')
     parser.add_argument('--skip', type=int, default=0)
     args = parser.parse_args()
 
+    USE_OPTUNA = args.tune
+    if USE_OPTUNA and not OPTUNA_AVAILABLE:
+        log.error("--tune requires optuna. Install with: pip install optuna")
+        sys.exit(1)
+
     log.info("="*60)
-    log.info("CROP RECOMMENDATION — PIPELINE v3.1 (Dual Dataset)")
+    log.info("CROP RECOMMENDATION — PIPELINE v3.2 (Dual Dataset)")
     log.info(f"Started: {datetime.now():%Y-%m-%d %H:%M:%S}")
+    log.info(f"Optuna tuning: {'ENABLED' if USE_OPTUNA else 'DISABLED'}")
     log.info("="*60)
 
     sessions = {1: session1, 2: session2, 3: session3, 4: session4, 5: session5}

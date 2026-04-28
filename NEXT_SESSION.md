@@ -1,8 +1,8 @@
 # NEXT SESSION — Status Update
 
-## Status: ALL CRITIQUE ITEMS RESOLVED ✅ (v3.1)
+## Status: ALL CRITIQUE ITEMS RESOLVED ✅ (v3.2)
 
-### Completed in This Session
+### Completed in v3.1
 - [x] Paper rewritten as RobustCrop proposal (not comparative)
 - [x] Title: "RobustCrop: A Leak-Free ML Pipeline..."
 - [x] Author details: Anuradha Brijwal + Praveena Chaturvedi, Gurukul Kangri
@@ -23,15 +23,23 @@
 - [x] Secondary results lead (Section 5.3)
 - [x] technical_critique.md updated
 
+### Completed in v3.2
+- [x] BalWeightWrapper: sample_weight balancing for ALL classifiers (XGBoost, GB, MLP, KNN, GaussianNB)
+- [x] Optuna nested CV hyperparameter tuning (`--tune` flag)
+- [x] Dead code removed (`add_class_imbalance`)
+- [x] Deprecation warnings on `scale_features()` and `run_all_fs_methods()`
+- [x] Missing dependencies fixed (shap, optuna in requirements.txt)
+- [x] Tests added (`tests/test_pipeline.py`)
+- [x] MIT License added
+- [x] `.gitignore` updated (.docx, .db, IDE files)
+- [x] `src/__init__.py` proper exports
+
 ### Remaining (Future Work)
 - [ ] Per-class SHAP breakdowns + local explanations
-- [ ] Hyperparameter tuning (Optuna)
-- [ ] Noise-augmented training for drift resilience
-- [ ] sample_weight for XGBoost/GB/MLP
 - [ ] Second crop dataset for true cross-dataset validation
-- [ ] Dead code cleanup (add_class_imbalance)
+- [ ] CI/CD pipeline (GitHub Actions)
 
-### Key Results (v3.1 — All Honest)
+### Key Results (v3.2 — All Honest)
 - **Primary:** RF 99.50%±0.09%, κ=0.9948
 - **Secondary:** RF 91.25%±0.77%, κ=0.8364 (sec_mi_top_6)
 - **Friedman:** χ²=32.32, p<0.001 (significant)

@@ -1,4 +1,9 @@
-"""Preprocessing — scaling, encoding, missing-value handling, outlier detection."""
+"""Preprocessing — scaling, encoding, missing-value handling, outlier detection.
+v3.2: Standalone scale_features() deprecated with warning.
+      The leak-free Pipeline (Session 3) fits scalers per CV fold internally.
+      Use prepare_data() only for exploratory analysis — NOT for final training.
+"""
+import warnings
 import numpy as np, pandas as pd, logging
 from sklearn.preprocessing import StandardScaler, MinMaxScaler, RobustScaler, LabelEncoder
 from sklearn.impute import SimpleImputer
@@ -44,7 +49,20 @@ def encode_target(y):
     return y_enc, le
 
 def scale_features(X_train, X_test, scaler_name='StandardScaler', feature_cols=None):
-    """Fit scaler on train, transform both train and test."""
+    """Fit scaler on train, transform both train and test.
+
+    .. deprecated::
+        This function fits a scaler on the full training set OUTSIDE the CV loop.
+        For final training, use the leak-free Pipeline in Session 3 which fits
+        the scaler per CV fold.  Use this only for exploratory / EDA purposes.
+    """
+    warnings.warn(
+        "scale_features() fits a scaler outside the CV loop. "
+        "For leak-free training, use the Pipeline in Session 3. "
+        "This function is for exploratory analysis only.",
+        DeprecationWarning,
+        stacklevel=2,
+    )
     if feature_cols is None:
         feature_cols = FEATURES
     scaler = SCALERS[scaler_name]()
@@ -54,7 +72,11 @@ def scale_features(X_train, X_test, scaler_name='StandardScaler', feature_cols=N
 
 def prepare_data(df, scaler_name='StandardScaler', test_size=TEST_SIZE,
                  target_col=None, feature_cols=None):
-    """Full preprocessing: impute → encode → scale → split."""
+    """Preprocessing for EDA/exploration ONLY: impute → encode → split.
+
+    WARNING: Do NOT use the scaled output for final model training.
+    The leak-free Pipeline in Session 3 handles scaling per CV fold.
+    """
     from sklearn.model_selection import train_test_split
     if target_col is None:
         target_col = TARGET
@@ -69,8 +91,10 @@ def prepare_data(df, scaler_name='StandardScaler', test_size=TEST_SIZE,
     X_train, X_test, y_train, y_test = train_test_split(
         X, y_enc, test_size=test_size, random_state=RANDOM_STATE, stratify=y_enc
     )
-    X_train_s, X_test_s, scaler = scale_features(X_train, X_test, scaler_name,
-                                                   feature_cols=feature_cols)
+    # NOTE: Scaling is done here for EDA only. Session 3 Pipeline does it per fold.
+    scaler = SCALERS[scaler_name]()
+    X_train_s = pd.DataFrame(scaler.fit_transform(X_train), columns=feature_cols, index=X_train.index)
+    X_test_s = pd.DataFrame(scaler.transform(X_test), columns=feature_cols, index=X_test.index)
     return {
         'X_train': X_train_s, 'X_test': X_test_s,
         'X_train_raw': X_train, 'X_test_raw': X_test,  # unscaled — for leak-free pipeline

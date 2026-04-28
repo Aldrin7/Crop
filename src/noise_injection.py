@@ -1,6 +1,8 @@
 """
 Literature-grounded sensor degradation simulation.
-v3.1: Monotonic directional drift (realistic electrochemical sensor behavior).
+v3.2: Monotonic directional drift (realistic electrochemical sensor behavior).
+      Dead code (add_class_imbalance) removed — was unused and misleading.
+
 Sources:
   - Rana et al. (2019) "IoT-based smart agriculture" — NPK electrochemical drift
   - Lobnik et al. (2011) pH electrode long-term stability
@@ -11,10 +13,11 @@ import numpy as np
 import pandas as pd
 from .config import FEATURES, TARGET, SENSOR, DEGRADATION
 
+
 def degrade_dataset(df, scenario='moderate', seed=42):
     """Apply sensor-specific monotonic drift + noise to each feature column.
     
-    v3.1: Drift is directional (sensors lose sensitivity over time, not random).
+    v3.2: Drift is directional (sensors lose sensitivity over time, not random).
     Each sensor gets a fixed drift direction per seed, consistent across samples.
     Dropout rate scaled to deployment duration.
     """
@@ -44,17 +47,3 @@ def degrade_dataset(df, scenario='moderate', seed=42):
         degraded = np.clip(degraded, lo, hi)
         out[feat] = degraded
     return out
-
-def add_class_imbalance(df, imbalance_ratio=0.3, seed=42):
-    """Subsample minority classes to create realistic imbalance."""
-    rng = np.random.RandomState(seed)
-    classes = df[TARGET].unique()
-    n_minority = int(100 * imbalance_ratio)
-    frames = []
-    for cls in classes:
-        sub = df[df[TARGET] == cls]
-        if rng.random() < 0.5:
-            frames.append(sub.sample(n=n_minority, random_state=seed))
-        else:
-            frames.append(sub)
-    return pd.concat(frames, ignore_index=True).sample(frac=1, random_state=seed)

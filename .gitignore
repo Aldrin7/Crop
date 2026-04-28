@@ -10,3 +10,14 @@ logs/*.log
 venv/
 *.zip
 secondary_temp/
+
+# Binary documents — use releases or external storage for large files
+*.docx
+*.doc
+
+# Optuna databases
+*.db
+
+# IDE
+.vscode/
+.idea/

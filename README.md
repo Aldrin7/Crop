@@ -2,12 +2,27 @@
 
 **Dual-Dataset Evaluation with Sensor Degradation Analysis and Cross-Dataset Feature Consistency**
 
-> **v3.1** — Leak-free `Pipeline(StandardScaler → SelectKBest(mutual_info) → Classifier)` per CV fold. `class_weight='balanced'` on RF/SVM/DT/LR/LightGBM. All results computed with corrected methodology and verified via Friedman test.
+> **v3.2** — Leak-free `Pipeline(StandardScaler → SelectKBest(mutual_info) → Classifier)` per CV fold. `class_weight='balanced'` or `BalWeightWrapper` (sample_weight) on ALL classifiers. Optuna nested CV tuning available via `--tune`. All results computed with corrected methodology and verified via Friedman test.
 
 **Authors:** Anuradha Brijwal¹, Praveena Chaturvedi²  
 ¹ Research Scholar, Department of Computer Science, Kanya Gurukul Campus Dehradun  
 ² Professor, Department of Computer Science, Kanya Gurukul Campus Dehradun  
 Gurukul Kangri (Deemed to be University), Haridwar, Uttarakhand, India
+
+---
+
+## What's New in v3.2
+
+| Change | Details |
+|--------|---------|
+| **BalWeightWrapper** | All classifiers now receive fair imbalance handling via `class_weight='balanced'` or `sample_weight='balanced'` wrapper |
+| **Optuna nested CV** | `--tune` flag enables hyperparameter tuning via Optuna (30 trials, 3-fold inner CV per outer fold) |
+| **Dead code removed** | `add_class_imbalance()` removed from `noise_injection.py` |
+| **Deprecation warnings** | `scale_features()` and `run_all_fs_methods()` now warn about proper usage |
+| **Missing deps fixed** | `shap` and `optuna` added to `requirements.txt` |
+| **Tests added** | `tests/test_pipeline.py` — preprocessing, models, FS, evaluation, noise, integration |
+| **MIT License** | Added explicit MIT license |
+| **`.gitignore` updated** | `.docx` excluded, Optuna DB patterns added |
 
 ---
 
@@ -62,7 +77,7 @@ Gurukul Kangri (Deemed to be University), Haridwar, Uttarakhand, India
 pipeline.py — Orchestrator (5 sessions)
 ├── Session 1: Data acquisition + EDA (both datasets)
 ├── Session 2: Preprocessing + descriptive feature selection
-├── Session 3: Leak-free CV training (Pipeline per fold)
+├── Session 3: Leak-free CV training (Pipeline per fold, optional --tune)
 ├── Session 4: Evaluation + SHAP + calibration + robustness
 └── Session 5: Paper artifacts + Friedman test
 
@@ -71,11 +86,14 @@ src/
 ├── data_loader.py         # Dataset loading
 ├── preprocessing.py       # Scaling, imputation, outlier detection
 ├── feature_selection.py   # 6 FS methods + Pipeline-compatible selectors
-├── models.py              # 10 classifiers (class_weight='balanced')
+├── models.py              # 10 classifiers + BalWeightWrapper for all
 ├── evaluation.py          # Kappa, MCC, Brier, ECE, Friedman test
 ├── explainability.py      # SHAP + GaussianNB calibration
 ├── noise_injection.py     # Monotonic sensor degradation simulation
 └── utils.py               # Checkpointing, logging, figures
+
+tests/
+└── test_pipeline.py       # Unit + integration tests
 ```
 
 ## Usage
@@ -84,8 +102,19 @@ src/
 git clone https://github.com/Aldrin7/Crop.git
 cd Crop
 pip install -r requirements.txt
-python3 pipeline.py --all         # Run everything
-python3 pipeline.py --session 3   # Or run individual sessions
+
+# Run everything (default hyperparameters)
+python3 pipeline.py --all
+
+# Run with Optuna hyperparameter tuning (nested CV)
+python3 pipeline.py --all --tune
+
+# Run individual sessions
+python3 pipeline.py --session 3
+python3 pipeline.py --session 3 --tune
+
+# Run tests
+python -m pytest tests/ -v
 ```
 
 ---
@@ -100,9 +129,12 @@ Pipeline(StandardScaler → SelectKBest(mutual_info, k=N) → Classifier)
 - Scaler fitted on training fold only (no leakage)
 - Feature selection per fold via mutual information (no global pre-selection)
 - 5-fold stratified CV for unbiased evaluation
+- **NEW:** Optional Optuna inner CV (3-fold, 30 trials) for hyperparameter tuning
 
-### Class Imbalance Handling
-`class_weight='balanced'` applied to RF, SVM, DT, LR, LightGBM.
+### Class Imbalance Handling (ALL Classifiers)
+- `class_weight='balanced'` natively supported: RF, SVM, DT, LR, LightGBM
+- `BalWeightWrapper` (sample_weight) for: XGBoost, GB, MLP, KNN, GaussianNB
+- **Every classifier receives balanced class weights** — no unfair advantage
 
 ### Feature Selection (Descriptive — 6 Methods + Consensus)
 Mutual Information · Chi-Square · RFE · LASSO · Extra Trees · Random Forest Importance  
@@ -132,4 +164,10 @@ Random Forest (proposed) · SVM-RBF · KNN · Decision Tree · Gradient Boosting
 
 ## License
 
-Research use — cite the original dataset sources.
+MIT License — see [LICENSE](LICENSE).
+
+## Cite
+
+If you use this code, cite the original dataset sources:
+- Primary: Atharva Ingle, Crop Recommendation Dataset (Kaggle)
+- Secondary: Rahul Jaiswal, Soil Fertility Dataset (Kaggle)

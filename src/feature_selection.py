@@ -1,8 +1,13 @@
 """
 Feature Selection — LEAK-FREE.
-All methods operate INSIDE the CV loop via sklearn Pipeline.
+All pipeline-compatible selectors operate INSIDE the CV loop via sklearn Pipeline.
 Critique 2.2 fix: No pre-selection on full X_train before CV.
+
+v3.2: run_all_fs_methods() now carries explicit warnings about data leakage.
+      It is ONLY for descriptive/interpretation analysis on the full dataset.
+      Training uses per-fold MI selection inside the Pipeline.
 """
+import warnings
 import numpy as np, pandas as pd, logging
 from sklearn.feature_selection import (
     SelectKBest, chi2, mutual_info_classif, RFE, f_classif
@@ -82,9 +87,26 @@ class RFESelector(BaseEstimator, TransformerMixin):
 def run_all_fs_methods(X, y, feature_names=None):
     """
     Run all FS methods for INTERPRETATION ONLY.
-    Results are descriptive rankings — NOT used for model selection.
-    Used to build consensus ranking for ablation study.
+    
+    .. warning::
+        This function fits feature selection on the FULL dataset.  The resulting
+        consensus ranking is DESCRIPTIVE ONLY — it shows which features are
+        important across methods, but using it for feature selection before
+        training would leak information.
+        
+        For training, use per-fold MI selection inside the Pipeline (Session 3).
+        This function is used in Session 2 for the ablation study and
+        interpretability analysis only.
+    
+    Returns a dict of DataFrames with feature scores per method.
     """
+    warnings.warn(
+        "run_all_fs_methods() fits on the full dataset. Results are descriptive "
+        "ONLY. Do NOT use for feature selection before training. Use the "
+        "per-fold MI selection inside the Pipeline for training.",
+        UserWarning,
+        stacklevel=2,
+    )
     if feature_names is None:
         feature_names = FEATURES
     results = {}
