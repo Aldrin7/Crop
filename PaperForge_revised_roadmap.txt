@@ -1,0 +1,807 @@
+================================================================================
+PaperForge 2.0 — Revised Roadmap (Pragmatic Edition)
+================================================================================
+Based on: Analysis of original 26-session plan
+Date: 2026-04-27
+Philosophy: Ship working software, not ambitious plans
+
+================================================================================
+WHAT CHANGED AND WHY
+================================================================================
+
+ORIGINAL PLAN PROBLEMS:
+  1. 18 hours for ~12 major subsystems — unrealistic
+  2. OMML→LaTeX conversion underestimated (could eat 3+ sessions alone)
+  3. 6 journals on day one — template acquisition is unpredictable
+  4. Electron desktop app adds complexity with little benefit over web
+  5. Visual regression testing is fragile cross-platform
+  6. No buffer for things going wrong (they will)
+  7. No incremental value delivery — everything works only at session 26
+
+REVISED APPROACH:
+  - Start with 2 journals, expand to 4 at most for v2.0
+  - Web-first (FastAPI + React), desktop packaging deferred to v2.1
+  - OMML→LaTeX replaced with simpler Pandoc-native equation handling
+  - Visual regression deferred to v2.1 (manual QA sufficient for launch)
+  - 5 contingency sessions built into the schedule
+  - Working demo after session 12 (not session 26)
+
+SCOPE CUTS (deferred to v2.1+):
+  ✗ Electron desktop app → web-only for v2.0
+  ✗ Visual regression testing → manual QA
+  ✗ OMML→LaTeX full conversion → Pandoc equation passthrough
+  ✗ JATS export → defer to v2.1 (PDF + DOCX + LaTeX is enough)
+  ✗ PyInstaller packaging → defer to v2.1
+
+SCOPE ADDITIONS (things the original missed + user-requested):
+  ✓ 6 journal templates with real download URLs (IEEE, Springer, Wiley,
+    Wiley NJD, Elsevier, MDPI, Nature) — all offline-ready after fetch
+  ✓ Template download script (scripts/download_templates.py)
+  ✓ Proper error messages users can understand
+  ✓ Loading states and progress feedback in the UI
+  ✓ Input validation (what if the DOCX is corrupt? wrong format?)
+  ✓ Logging that actually helps debug problems
+  ✓ A "quick export" mode for the common case (no audit, just format)
+
+================================================================================
+REVISED DIRECTORY STRUCTURE
+================================================================================
+
+PaperForge/
+├── README.md
+├── LICENSE
+├── CHANGELOG.md
+├── pyproject.toml
+├── config/
+│   ├── settings.yaml
+│   └── journals/
+│       ├── ieee.yaml
+│       ├── springer.yaml
+│       ├── wiley.yaml
+│       ├── wiley-njd.yaml
+│       ├── elsevier.yaml
+│       ├── mdpi.yaml
+│       └── nature.yaml
+├── bin/
+│   └── pandoc(.exe)              # Bundled Pandoc 3.3+
+├── src/
+│   ├── __init__.py
+│   ├── models.py                 # Pydantic schemas
+│   ├── config.py                 # YAML config loader
+│   ├── ingestion/
+│   │   ├── __init__.py
+│   │   ├── docx_ingest.py        # DOCX → Pandoc AST
+│   │   └── reference_parse.py    # Bibliography extraction
+│   ├── transformation/
+│   │   ├── __init__.py
+│   │   ├── engine.py             # AST transformation pipeline
+│   │   ├── csl.py                # CSL citation engine
+│   │   └── crossref.py           # Cross-reference resolution
+│   ├── auditing/
+│   │   ├── __init__.py
+│   │   └── semantic.py           # Citation + structure validation
+│   ├── rendering/
+│   │   ├── __init__.py
+│   │   ├── pdf_engine.py         # Pandoc → PDF
+│   │   ├── docx_export.py        # DOCX reconstruction
+│   │   └── latex_export.py       # LaTeX source export
+│   ├── orchestration/
+│   │   ├── __init__.py
+│   │   ├── main.py               # CLI entry + pipeline
+│   │   ├── ledger.py             # SQLite checkpoint/resume
+│   │   └── memory.py             # Memory guard
+│   └── webapi/
+│       ├── __init__.py
+│       └── app.py                # FastAPI endpoints
+├── gui/
+│   ├── package.json
+│   └── src/
+│       ├── App.jsx
+│       ├── api.js                # HTTP client to FastAPI
+│       └── components/
+│           ├── DropZone.jsx
+│           ├── Toolbar.jsx
+│           ├── Preview.jsx
+│           ├── ExportDialog.jsx
+│           └── StatusBar.jsx
+├── templates/
+│   ├── manifest.json
+│   ├── ieee/
+│   │   ├── IEEEtran.cls
+│   │   ├── sample.tex
+│   │   └── template.docx        # Converted from sample.tex via Pandoc
+│   ├── springer/
+│   │   ├── sn-jnl.cls
+│   │   ├── sample.tex
+│   │   └── template.docx
+│   ├── wiley/
+│   │   ├── wiley-design.cls
+│   │   ├── sample.tex
+│   │   └── template.docx
+│   ├── wiley-njd/
+│   │   ├── WileyNJDv5.cls
+│   │   ├── sample.tex
+│   │   └── template.docx
+│   ├── elsevier/
+│   │   ├── elsarticle.cls
+│   │   ├── sample.tex
+│   │   └── template.docx
+│   ├── mdpi/
+│   │   ├── mdpi.cls
+│   │   ├── sample.tex
+│   │   └── template.docx
+│   └── nature/
+│       ├── nature.cls
+│       ├── sample.tex
+│       └── template.docx
+├── csl/
+│   ├── ieee.csl
+│   ├── springer.csl
+│   ├── elsevier.csl
+│   ├── wiley.csl
+│   ├── mdpi.csl
+│   └── nature.csl
+├── tests/
+│   ├── conftest.py
+│   ├── fixtures/
+│   │   ├── minimal.docx
+│   │   ├── with_equations.docx
+│   │   ├── with_tables.docx
+│   │   └── sample.bib
+│   ├── test_ingestion.py
+│   ├── test_transformation.py
+│   ├── test_rendering.py
+│   ├── test_orchestrator.py
+│   └── test_api.py
+├── scripts/
+│   ├── generate_fixtures.py
+│   └── check_templates.py
+└── docs/
+    ├── ARCHITECTURE.md
+    ├── USER_GUIDE.md
+    └── DEVELOPER_GUIDE.md
+
+================================================================================
+REVISED SESSION PLAN — 20 SESSIONS + 5 CONTINGENCY
+================================================================================
+
+Total sessions: 20 planned + 5 contingency = 25 max
+Estimated wall-time: 20 × 40 min = ~13.3 hours (realistic: ~16 hours with buffer)
+
+ ──────────────────────────────────────────────────────────────────────────
+ PHASE 1: FOUNDATION (Sessions 1-4) — "Make it exist"
+ ──────────────────────────────────────────────────────────────────────────
+
+SESSION 1 — Project Bootstrap + Config System
+──────────────────────────────────────────────
+Goal: Repo, dependencies, config, schemas — all in one session.
+Why merged: Original split bootstrap and config into 2 sessions. Unnecessary.
+      The config system IS part of bootstrapping.
+
+  1. Create directory structure (simplified from original)
+  2. Write pyproject.toml with dependencies
+  3. Write .gitignore, README.md skeleton
+  4. Write src/models.py — all Pydantic schemas
+     (Simplified: fewer models than original, but covers real needs)
+  5. Write src/config.py — YAML loader + validation
+  6. Write config/settings.yaml + config/journals/ieee.yaml + springer.yaml
+  7. Write tests/test_config.py — basic load/validate tests
+  8. git init, initial commit
+
+PASS: pytest tests/test_config.py — all green
+TIME: 45 min
+
+SESSION 2 — Ingestion Engine
+──────────────────────────────────────────────
+Goal: DOCX → Pandoc AST + metadata extraction.
+Why merged: Original split this into 4 sessions (core, equations, refs+images,
+      tables+crossrefs). We combine them because python-docx handles all of
+      these in one pass. The OMML→LaTeX conversion is REPLACED by letting
+      Pandoc handle equations natively.
+
+  1. Write src/ingestion/docx_ingest.py
+     - load_docx(path) → IngestResult
+     - python-docx for metadata extraction
+     - pypandoc for DOCX → Pandoc JSON AST
+     - Pandoc handles equations, tables, images natively in its AST
+  2. Write src/ingestion/reference_parse.py
+     - Extract bibliography section
+     - Parse BibTeX with bibtexparser
+     - Fallback: regex for plain-text numbered refs
+  3. Write tests/test_ingestion.py
+     - Use fixtures/minimal.docx, with_equations.docx, with_tables.docx
+     - Test metadata extraction, AST non-empty, refs parsed
+  4. Generate test fixtures (scripts/generate_fixtures.py)
+  5. Commit
+
+PASS: pytest tests/test_ingestion.py — all green
+     minimal.docx → IngestResult with title, authors, ast
+TIME: 50 min (generous, this is the hardest session)
+
+SESSION 3 — Transformation + Citation Engine
+──────────────────────────────────────────────
+Goal: Reshape AST for journal formatting, apply citations.
+Why merged: Original split transform and CSL into 2 sessions. They're
+      tightly coupled — CSL formatting IS part of the transformation.
+
+  1. Write src/transformation/engine.py
+     - transform_ast(ast, journal_config) → TransformResult
+     - Apply page settings (margins, columns, page size)
+     - Apply font/alignment rules via Pandoc metadata
+     - Resolve cross-references (figure/table/equation numbering)
+  2. Write src/transformation/csl.py
+     - Apply CSL citation formatting via citeproc-py
+     - Handle numeric [1] and author-year styles
+     - Generate bibliography section
+  3. Write src/transformation/crossref.py
+     - Build index of figures/tables/equations
+     - Replace REF fields with formatted text
+  4. Add CSL files: csl/ieee.csl, csl/springer.csl
+     (Download from citation-style-language/styles repo)
+  5. Write tests/test_transformation.py
+  6. Commit
+
+PASS: pytest tests/test_transformation.py — all green
+     Transformed AST has journal-specific metadata + formatted citations
+TIME: 45 min
+
+SESSION 4 — Rendering + Export
+──────────────────────────────────────────────
+Goal: PDF, DOCX, and LaTeX export all working.
+Why merged: Original split PDF and multi-format into 2 sessions. The
+      rendering engines are thin wrappers around Pandoc — not enough
+      work to justify separate sessions.
+
+  1. Write src/rendering/pdf_engine.py
+     - Pandoc AST → LaTeX → PDF via Pandoc (no Tectonic for v2.0)
+     - Rationale: Pandoc's built-in PDF engine (via pdflatex/xelatex)
+       is simpler. Tectonic can be added in v2.1.
+     - Journal-specific LaTeX preamble from config
+  2. Write src/rendering/docx_export.py
+     - Pandoc AST → DOCX via Pandoc
+     - Apply journal template as reference doc
+  3. Write src/rendering/latex_export.py
+     - Pandoc AST → standalone LaTeX source
+  4. Write tests/test_rendering.py
+     - Test each format produces valid output
+     - PDF: check %PDF header
+     - DOCX: python-docx can open it
+     - LaTeX: check \documentclass present
+  5. Commit
+
+PASS: pytest tests/test_rendering.py — all green
+     Three files produced: output.pdf, output.docx, output.tex
+TIME: 40 min
+
+ ──────────────────────────────────────────────────────────────────────────
+ PHASE 2: ORCHESTRATION (Sessions 5-7) — "Make it reliable"
+ ──────────────────────────────────────────────────────────────────────────
+
+SESSION 5 — Pipeline Orchestrator + Checkpoint/Resume
+──────────────────────────────────────────────
+Goal: Single CLI command: ingest → transform → render → export.
+      Crash-safe with checkpoint/resume.
+
+  1. Write src/orchestration/ledger.py
+     - SQLite WAL mode for run state
+     - Methods: create_run(), log_step(), get_run_state()
+  2. Write src/orchestration/memory.py
+     - MemoryGuard context manager
+     - RSS monitoring, gc.collect() after heavy ops
+  3. Write src/orchestration/main.py
+     - CLI: python -m src.orchestration.main --journal ieee --docx input.docx
+     - Pipeline: ingest → transform → audit → render → export
+     - Checkpoint after each step (atomic write)
+     - --resume flag to continue from last checkpoint
+  4. Write tests/test_orchestrator.py
+     - End-to-end with fixtures/minimal.docx
+     - Checkpoint files created
+     - Resume after simulated failure
+  5. Commit
+
+PASS: Full pipeline produces output/ directory with PDF + DOCX + LaTeX
+TIME: 50 min
+
+SESSION 6 — Semantic Audit
+──────────────────────────────────────────────
+Goal: Validate citations, structure, and completeness.
+Note: JATS compliance validator DEFERRED to v2.1. Too much work for MVP.
+
+  1. Write src/auditing/semantic.py
+     - Check all \cite keys resolve to references
+     - Check all figures/tables have captions
+     - Check all cross-references have targets
+     - Check abstract is non-empty
+     - Check at least one section exists
+     - Return AuditResult with errors + warnings
+  2. Integrate into orchestrator pipeline
+     - Audit step between transform and render
+     - Warnings logged but don't block export
+     - Errors block export with user-friendly message
+  3. Write tests/test_audit.py
+  4. Commit
+
+PASS: Valid doc passes audit, doc with missing ref produces warning
+TIME: 35 min
+
+SESSION 7 — Template Management + Journal Library
+──────────────────────────────────────────────
+Goal: Journal templates with checksum verification. All 6 journals
+      sourced with real download URLs, offline-ready after initial fetch.
+
+  1. Create templates/manifest.json
+     - SHA-256 checksums for all template files
+     - Version tracking
+     - Source URL for each template (for re-download if checksum fails)
+
+  2. Download all 6 journal template packages
+
+     ┌─────────────────────────────────────────────────────────────────────┐
+     │  JOURNAL        │ SOURCE URL                                        │
+     ├─────────────────┼───────────────────────────────────────────────────┤
+     │  IEEE           │ https://github.com/latextemplates/ieee-enhanced/  │
+     │  (IEEEtran.cls) │   archive/refs/heads/main.zip                     │
+     │                 │ Includes IEEEtran.cls, sample paper-conference.tex│
+     ├─────────────────┼───────────────────────────────────────────────────┤
+     │  Springer       │ Overleaf template (user can Download ZIP):        │
+     │  (Nature/SN)    │   https://www.overleaf.com/latex/templates/       │
+     │                 │     springernature-template/...                   │
+     │                 │ Alternative: direct from Springer portal          │
+     ├─────────────────┼───────────────────────────────────────────────────┤
+     │  Wiley          │ https://authors.wiley.com/asset/WileyDesign.zip   │
+     │  (PDF-Design)   │ Contains class files, style sheets, author guide  │
+     ├─────────────────┼───────────────────────────────────────────────────┤
+     │  Elsevier       │ https://mirrors.ctan.org/macros/latex/contrib/    │
+     │  (elsarticle)   │   elsarticle.tar.gz                              │
+     │                 │ CTAN package: https://ctan.org/pkg/elsarticle     │
+     ├─────────────────┼───────────────────────────────────────────────────┤
+     │  MDPI           │ https://github.com/metaphori/Template-LaTeX-MDPI/ │
+     │  (mdpi.cls)     │   archive/refs/heads/master.zip                   │
+     ├─────────────────┼───────────────────────────────────────────────────┤
+     │  Nature         │ https://ctan.org/pkg/nature                       │
+     │  (CTAN basic)   │ Tarball via CTAN mirrors                          │
+     ├─────────────────┼───────────────────────────────────────────────────┤
+     │  Wiley NJD v5   │ https://authorservices.wiley.com/asset/           │
+     │  (NJD v5 2024)  │   WileyNJDv5_Template.zip                        │
+     └─────────────────┴───────────────────────────────────────────────────┘
+
+     Download strategy:
+       a. Primary: fetch from URL via requests/httpx
+       b. Fallback: if download fails, check templates/ for cached copy
+       c. Offline: once downloaded, no network needed ever again
+       d. Verify: SHA-256 computed after download, stored in manifest
+
+  3. Extract + organize each package
+     - Unzip/untar into templates/<journal>/ directory
+     - Identify main .cls/.sty files and sample .tex
+     - Convert sample .tex → sample.docx via Pandoc (for our DOCX pipeline)
+     - Compute SHA-256 for all extracted files
+
+  4. Write scripts/download_templates.py
+     - Downloads all templates from URLs above
+     - Extracts to correct directories
+     - Updates manifest.json with checksums
+     - Skips already-downloaded templates (idempotent)
+     - Usage: python scripts/download_templates.py [--journal ieee]
+
+  5. Write scripts/check_templates.py
+     - Verify all checksums match manifest
+     - Report missing/corrupt templates
+     - Suggest re-download command for failures
+
+  6. Create config/journals/*.yaml for all 6 journals
+     (IEEE + Springer as primary; Wiley, Elsevier, MDPI, Nature as secondary)
+
+  7. Commit
+
+PASS: check_templates.py exits 0 for all journals
+     scripts/download_templates.py completes without error
+TIME: 45 min (download time varies by network)
+
+ ──────────────────────────────────────────────────────────────────────────
+ PHASE 3: WEB UI (Sessions 8-12) — "Make it usable"
+ ──────────────────────────────────────────────────────────────────────────
+
+SESSION 8 — FastAPI Backend
+──────────────────────────────────────────────
+Goal: REST API for all operations.
+
+  1. Write src/webapi/app.py
+     POST /api/upload        → accept DOCX, return run_id
+     POST /api/export        → trigger export (formats: pdf, docx, latex)
+                                                            journals: ieee, springer, wiley, wiley-njd, elsevier, mdpi, nature
+     GET  /api/status/{id}   → current pipeline status
+     GET  /api/download/{id} → download exported files
+     GET  /api/health        → health check
+  2. File upload handling (save to temp dir, validate DOCX)
+  3. Background task processing (FastAPI BackgroundTasks)
+  4. Error responses with user-friendly messages
+  5. Write tests/test_api.py
+  6. Commit
+
+PASS: uvicorn starts, all endpoints respond, upload + export works
+TIME: 40 min
+
+SESSION 9 — React Frontend: Core UI
+──────────────────────────────────────────────
+Goal: Upload, preview, and export interface.
+
+  1. Initialize gui/ with Vite + React (not CRA, not raw esbuild)
+     - Vite is modern, fast, and well-maintained
+  2. Write gui/src/App.jsx — main layout
+  3. Write gui/src/api.js — HTTP client for FastAPI
+  4. Write gui/src/components/DropZone.jsx
+     - Drag-and-drop .docx files
+     - Show upload progress
+     - Validate file type client-side
+  5. Write gui/src/components/Preview.jsx
+     - Show document metadata (title, authors, abstract)
+     - Show ingestion results (equations found, refs found, etc.)
+  6. Write gui/src/components/StatusBar.jsx
+     - Pipeline progress: Ingesting → Transforming → Auditing → Rendering
+     - Memory usage display
+  7. Connect to FastAPI backend
+  8. Commit
+
+PASS: Browser shows UI, drag-drop uploads file, preview shows metadata
+TIME: 45 min
+
+SESSION 10 — React Frontend: Export + Polish
+──────────────────────────────────────────────
+Goal: Export dialog, download links, error handling.
+
+  1. Write gui/src/components/ExportDialog.jsx
+     - Format selection checkboxes (PDF, DOCX, LaTeX)
+     - Journal selector (IEEE, Springer, Wiley, Elsevier, MDPI, Nature, Wiley NJD)
+     - Export button with loading state
+  2. Write gui/src/components/Toolbar.jsx
+     - Quick export button (one-click: PDF for selected journal)
+     - Full export button (opens ExportDialog)
+  3. Add error handling
+     - Network errors → toast notification
+     - Validation errors → inline messages
+     - Pipeline failures → error dialog with retry
+  4. Add loading states
+     - Skeleton loaders for preview
+     - Progress bar for export
+     - Spinner for upload
+  5. Commit
+
+PASS: Full user flow works: upload → preview → export → download
+TIME: 40 min
+
+SESSION 11 — Integration Testing + Bug Fixes
+──────────────────────────────────────────────
+Goal: End-to-end testing with real(ish) documents.
+
+  1. Manual testing: upload various DOCX files, export each format
+  2. Fix any bugs found
+  3. Test edge cases:
+     - Empty document
+     - Document with no references
+     - Document with equations
+     - Document with tables
+     - Very large document (50+ pages)
+  4. Write integration tests
+  5. Commit
+
+PASS: No crashes on valid input, clear errors on invalid input
+TIME: 45 min (buffer session — likely shorter)
+
+SESSION 12 — Documentation
+──────────────────────────────────────────────
+Goal: Docs that let someone else use and contribute.
+
+  1. Update README.md
+     - What it does, how to install, how to run
+     - Screenshots (take from browser)
+  2. Write docs/ARCHITECTURE.md
+     - System diagram
+     - Data flow
+     - Component responsibilities
+  3. Write docs/USER_GUIDE.md
+     - Step-by-step walkthrough
+     - Troubleshooting
+  4. Write docs/DEVELOPER_GUIDE.md
+     - Dev setup
+     - Running tests
+     - Adding a new journal
+  5. Write CHANGELOG.md
+  6. Commit
+
+PASS: Docs are complete and accurate
+TIME: 35 min
+
+ ──────────────────────────────────────────────────────────────────────────
+ PHASE 4: POLISH + RELEASE (Sessions 13-16) — "Make it shippable"
+ ──────────────────────────────────────────────────────────────────────────
+
+SESSION 13 — CI/CD Pipeline
+──────────────────────────────────────────────
+
+  1. Write .github/workflows/ci.yml
+     - Lint (ruff)
+     - Test (pytest)
+     - Build check (npm build for frontend)
+  2. Write .pre-commit-config.yaml
+  3. Add ruff config to pyproject.toml
+  4. Test locally
+  5. Commit
+
+PASS: pre-commit runs clean, CI config valid
+TIME: 25 min
+
+SESSION 14 — Stress Testing + Performance
+──────────────────────────────────────────────
+
+  1. Test with 10 different documents
+  2. Monitor memory usage (must stay under 2.8 GB)
+  3. Test checkpoint/resume (kill mid-run, resume)
+  4. Profile slow spots, optimize if needed
+  5. Fix any issues found
+  6. Commit
+
+PASS: 10 docs processed, no memory violations, resume works
+TIME: 40 min
+
+SESSION 15 — Release Packaging
+──────────────────────────────────────────────
+
+  1. Write LICENSE (MIT)
+  2. Final version bump in pyproject.toml
+  3. Build frontend: cd gui && npm run build
+  4. Create release zip
+  5. Generate SHA-256 checksums
+  6. Write RELEASE_NOTES.md
+  7. Git tag v2.0.0
+  8. Commit
+
+PASS: Zip exists, checksums match, tag created
+TIME: 25 min
+
+SESSION 16 — Final QA + Buffer
+──────────────────────────────────────────────
+Goal: Last chance to fix anything.
+
+  1. Full end-to-end walkthrough from clean state
+  2. Fix any remaining issues
+  3. Update docs if anything changed
+  4. Final commit
+
+PASS: Clean install → working app in under 5 minutes
+TIME: 30 min (likely shorter — this is buffer)
+
+ ──────────────────────────────────────────────────────────────────────────
+ CONTINGENCY SESSIONS (17-20) — "Things went wrong"
+ ──────────────────────────────────────────────────────────────────────────
+
+CONTINGENCY 17 — Ingestion Edge Cases
+  If DOCX parsing breaks on real-world documents, use this session
+  to fix parsing, add fallbacks, handle malformed input.
+
+CONTINGENCY 18 — Rendering Issues
+  If PDF output doesn't look right, if LaTeX compilation fails,
+  if journal templates don't apply correctly — fix here.
+
+CONTINGENCY 19 — UI Problems
+  If the React frontend has issues, if API integration breaks,
+  if cross-browser problems appear — fix here.
+
+CONTINGENCY 20 — Undone Work
+  Catch-all for anything from the original plan that turns out
+  to be essential but wasn't completed. Pick the highest-priority
+  item from the DEFERRED list and implement it.
+
+================================================================================
+SESSION DEPENDENCY GRAPH (SIMPLIFIED)
+================================================================================
+
+  Session 1 (Bootstrap + Config)
+       │
+       ├──→ Session 2 (Ingestion)
+       │         │
+       │         └──→ Session 3 (Transform + CSL)
+       │                   │
+       │                   └──→ Session 4 (Rendering)
+       │
+       └──→ Session 7 (Templates) ← can run in parallel with 2-4
+
+  Session 2 + 3 + 4 complete
+       │
+       └──→ Session 5 (Orchestrator)
+                │
+                ├──→ Session 6 (Audit)
+                │
+                └──→ Session 8 (FastAPI)
+                          │
+                          ├──→ Session 9 (React Core)
+                          │         │
+                          │         └──→ Session 10 (React Export)
+                          │
+                          └──→ Session 11 (Integration)
+
+  Session 10 + 11 complete
+       │
+       └──→ Session 12 (Docs)
+                │
+                ├──→ Session 13 (CI)
+                ├──→ Session 14 (Stress)
+                ├──→ Session 15 (Release)
+                └──→ Session 16 (Final QA)
+
+  PARALLELIZABLE:
+    - Sessions 2, 3, 4 can overlap with Session 7
+    - Sessions 9, 10 can overlap with Session 6
+    - Sessions 13, 14, 15, 16 are independent
+
+================================================================================
+WHAT GOT CUT (AND WHY)
+================================================================================
+
+ORIGINAL SESSION              REVISED STATUS        RATIONALE
+─────────────────────────────────────────────────────────────────────────
+Heartbeat timer               CUT entirely          Over-engineering for v2.0.
+                                                    The orchestrator tracks
+                                                    progress already.
+
+Electron desktop app          DEFERRED to v2.1      Web-only is sufficient.
+                                                    Electron adds build
+                                                    complexity, packaging
+                                                    headaches, and 50+ MB.
+
+Visual regression testing     DEFERRED to v2.1      SSIM is fragile across
+                                                    platforms. Manual QA
+                                                    is fine for launch.
+
+Tectonic PDF engine           DEFERRED to v2.1      Pandoc + system LaTeX is
+                                                    simpler. Tectonic can be
+                                                    added later for smaller
+                                                    bundles.
+
+OMML→LaTeX conversion         REPLACED              Pandoc handles equations
+                                                    natively in its AST.
+                                                    No custom OMML parser
+                                                    needed.
+
+JATS XML export               DEFERRED to v2.1      Nice to have, not
+                                                    essential. PDF + DOCX
+                                                    + LaTeX covers 99% of
+                                                    use cases.
+
+JATS 22-rule validator        DEFERRED to v2.1      Only useful if JATS
+                                                    export exists.
+
+PyInstaller packaging         DEFERRED to v2.1      Web deployment is
+                                                    simpler. Desktop app
+                                                    comes with Electron.
+
+JSON-RPC stdio bridge         REPLACED              Was for Electron↔Python.
+                                                    Web uses HTTP instead.
+                                                    No IPC bridge needed.
+
+Template manager GUI          SIMPLIFIED            No interactive template
+                                                    editing in v2.0. Users
+                                                    upload DOCX, we format
+                                                    it.
+
+6 journal support             EXPANDED to 7           IEEE, Springer, Wiley,
+                                                    Elsevier, MDPI, Nature,
+                                                    Wiley NJD v5 — all with
+                                                    real download URLs,
+                                                    offline-ready after
+                                                    initial fetch.
+
+================================================================================
+WHAT GOT ADDED (THINGS ORIGINAL MISSED)
+================================================================================
+
+1. USER-FACING ERROR MESSAGES
+   Original had zero consideration for what users see when things fail.
+   Every error path now produces a human-readable message:
+   - "This doesn't look like a Word document" (not "Invalid DOCX structure")
+   - "Couldn't find any references in your document" (not "Empty bibliography")
+   - "PDF generation failed — try again" (not "Tectonic exit code 1")
+
+2. LOADING STATES + PROGRESS
+   Original had no UI feedback design. Added:
+   - Upload progress bar
+   - Pipeline stage indicators
+   - Export progress
+   - Skeleton loaders
+
+3. INPUT VALIDATION
+   Original assumed valid input. Added:
+   - File type checking (reject non-DOCX)
+   - File size limits (prevent memory issues)
+   - DOCX structure validation (is it actually a valid doc?)
+   - Empty document detection
+
+4. QUICK EXPORT MODE
+   Original required full audit pipeline for every export. Added:
+   - One-click "just format it" mode (skips audit, faster)
+   - Full audit available as opt-in
+
+5. PROPER LOGGING
+   Original mentioned logging but had no design. Added:
+   - Structured JSON logs (for machines)
+   - Human-readable log viewer in UI (for users)
+   - Log levels: DEBUG for devs, INFO for users, ERROR for support
+
+================================================================================
+RISK REGISTER (UPDATED)
+================================================================================
+
+RISK                               LIKELIHOOD  IMPACT   MITIGATION
+──────────────────────────────────────────────────────────────────────
+DOCX parsing breaks on real docs   HIGH        HIGH     Contingency S17.
+                                                        Pandoc is robust,
+                                                        but edge cases exist.
+
+PDF output doesn't match journal   HIGH        MEDIUM   v2.0 accepts "close
+                                                        enough." Exact match
+                                                        is v2.1 goal.
+
+Template download fails (URL       MEDIUM      HIGH     scripts/download_templates.py
+changes, site down, rate limit)                         has retry + fallback.
+                                                        Cached copies in repo.
+                                                        Checksums catch corruption.
+
+citeproc-py edge cases             MEDIUM      LOW      Wrap in try/except,
+                                                        log warnings, show
+                                                        raw citation as
+                                                        fallback.
+
+Memory exceeds limit               LOW         HIGH     MemoryGuard catches
+                                                        it. Per-step budget
+                                                        in orchestrator.
+
+LaTeX class conflicts between      MEDIUM      MEDIUM   Each journal gets its
+journals (e.g. Wiley NJD vs                             own isolated build dir.
+Wiley Design)                                           Config specifies exact
+                                                        class file path.
+
+Frontend build breaks              LOW         MEDIUM   Vite is stable.
+                                                        Pin dependency
+                                                        versions.
+
+LaTeX not installed on user's      MEDIUM      HIGH     Document requirement.
+machine                                                 Consider bundling
+                                                        minimal LaTeX in v2.1.
+
+================================================================================
+DEFERRED TO V2.1 (PRIORITIZED)
+================================================================================
+
+Priority  Item                        Effort    Value
+──────────────────────────────────────────────────────────────────────
+  1       Tectonic PDF engine         1 sess    Medium — smaller bundle, no
+                                                LaTeX install needed
+  2       Electron desktop app        3 sess    Medium — offline use case
+  3       Visual regression testing   2 sess    Medium — catches formatting
+                                                regressions
+  4       JATS XML export             2 sess    Low — niche publishing need
+  5       JATS compliance validator   1 sess    Low — only useful with JATS
+  6       Zotero/Mendeley integration 2 sess    Medium — reference managers
+  7       Multi-language support      3 sess    Medium — CJK, RTL
+  8       Plugin system               3 sess    Low — extensibility
+  9       Auto-update mechanism       2 sess    Low — convenience
+
+================================================================================
+SUCCESS CRITERIA (V2.0 LAUNCH)
+================================================================================
+
+A user can:
+  1. Open the web UI in their browser
+  2. Drag a DOCX file onto the page
+  3. Select a journal (IEEE, Springer, Wiley, Elsevier, MDPI, or Nature)
+  4. Click "Export"
+  5. Download a properly formatted PDF, DOCX, or LaTeX file
+  6. The whole process takes under 2 minutes for a typical paper
+  7. If something goes wrong, they see a clear error message
+  8. If the process crashes, they can resume from where it left off
+
+That's it. That's the launch. Everything else is v2.1.
+
+================================================================================
+END OF REVISED ROADMAP
+================================================================================

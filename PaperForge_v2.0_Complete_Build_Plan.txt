@@ -1,0 +1,1777 @@
+================================================================================
+PaperForge 2.0 — Complete End-to-End Build Plan (Revised & Audited)
+================================================================================
+Version: 2.0-draft
+Date: 2026-04-27
+Constraints: 3 GB RAM max, 45-min ephemeral sessions, fully offline, DOCX-only
+Target: Desktop .exe (<150 MB) + Web service (FastAPI + React)
+Total Sessions: 24 (+ 2 contingency)
+Estimated Wall-Time: ~18 hours (26 sessions × ~45 min each)
+
+================================================================================
+AUDIT FINDINGS — WHAT THE ORIGINAL PLAN MISSED
+================================================================================
+
+CRITICAL GAPS (fixed in this revision):
+  1. PDF generation step was completely missing — no LaTeX engine setup
+  2. ZeroRPC is unmaintained (last release 2019), breaks on Python 3.12
+  3. No actual code snippets existed — plan assumed pre-written code
+  4. No data schemas defined — JSON structures were informal
+  5. DOCX feature coverage was incomplete (cross-refs, footnotes, tables)
+  6. No checkpoint atomicity — half-written checkpoints = unrecoverable
+  7. No configuration system — everything was hard-coded
+  8. No font handling strategy — journal fonts may be missing
+  9. No test fixtures — CI would depend on real templates
+  10. No logging infrastructure
+
+ARCHITECTURAL IMPROVEMENTS:
+  - IPC: ZeroRPC → JSON-RPC 2.0 over stdio (zero dependencies, native Node+Python)
+  - Checkpoints: atomic write (temp → rename) with SHA-256 integrity
+  - Config: YAML-based config with per-journal overrides
+  - Schemas: Pydantic models for all data structures
+  - PDF: Pandoc + Tectonic (self-contained LaTeX, ~50 MB, no MiKTeX/TeX Live)
+  - Logging: Python logging module with structured JSON output
+  - Fonts: runtime font detection + bundled fallback fonts (Noto)
+
+DEPENDENCY AUDIT:
+  python-docx     0.8.11+   OK, actively maintained
+  pypandoc        1.14+     OK, wraps pandoc binary
+  citeproc-py     0.6.0+    OK, CSL 1.0.1 compliant, Python 3.12 works
+  pydantic        2.x       OK, for schema validation
+  psutil          5.9+      OK, memory monitoring
+  fastapi         0.100+    OK, web API
+  uvicorn          0.23+    OK, ASGI server
+  pyinstaller     6.x       OK, directory-mode packaging
+  pandoc          3.3+      Binary, bundled in repo (bin/pandoc)
+  tectonic        0.14+     Binary, bundled in repo (bin/tectonic)
+
+  REMOVED:
+  zerorpc         DEAD      Replaced with JSON-RPC 2.0 over stdio
+  docxlatex       FRAGILE   Replaced with direct python-docx + pandoc
+  docal           UNNEEDED  Replaced with pandoc equation extraction
+
+================================================================================
+DIRECTORY STRUCTURE (FINAL)
+================================================================================
+
+PaperForge/
+├── README.md
+├── LICENSE
+├── CHANGELOG.md
+├── requirements.txt
+├── pyproject.toml
+├── config/
+│   ├── settings.yaml          # Global config (thresholds, paths, limits)
+│   └── journals/
+│       ├── ieee.yaml          # Per-journal config (fonts, margins, CSL)
+│       ├── springer.yaml
+│       ├── elsevier.yaml
+│       ├── wiley.yaml
+│       ├── mdpi.yaml
+│       └── nature.yaml
+├── bin/
+│   ├── pandoc(.exe)           # Bundled Pandoc 3.3+
+│   └── tectonic(.exe)         # Bundled Tectonic 0.14+
+├── src/
+│   ├── __init__.py
+│   ├── models.py              # Pydantic schemas (all data structures)
+│   ├── config.py              # Config loader (YAML → Pydantic)
+│   ├── ingestion/
+│   │   ├── __init__.py
+│   │   ├── docx_ingest.py     # DOCX → Pandoc AST + metadata
+│   │   ├── equation_extract.py # LaTeX/OMML equation extraction
+│   │   └── reference_parse.py  # Bibliography extraction
+│   ├── transformation/
+│   │   ├── __init__.py
+│   │   ├── engine.py          # AST transformation pipeline
+│   │   ├── csl.py             # CSL citation engine (citeproc-py)
+│   │   ├── crossref.py        # Cross-reference resolution
+│   │   └── filters/
+│   │       ├── fonts-and-alignment.lua
+│   │       ├── tables.lua
+│   │       └── crossrefs.lua
+│   ├── auditing/
+│   │   ├── __init__.py
+│   │   ├── semantic.py        # Citation key validation
+│   │   ├── jats_compliance.py # JATS XML 22-rule validator
+│   │   └── visual.py          # PDF visual regression wrapper
+│   ├── rendering/
+│   │   ├── __init__.py
+│   │   ├── pdf_engine.py      # Pandoc + Tectonic PDF generation
+│   │   ├── latex_export.py    # LaTeX source export
+│   │   ├── docx_export.py     # DOCX export (reconstructed)
+│   │   └── jats_export.py     # JATS XML export
+│   ├── orchestration/
+│   │   ├── __init__.py
+│   │   ├── main.py            # CLI entry point + pipeline orchestrator
+│   │   ├── ledger.py          # SQLite WAL ledger (checkpoint/resume)
+│   │   ├── heartbeat.py       # Session timer + JSON summary
+│   │   ├── memory.py          # MemoryGuard context manager
+│   │   └── checkpoint.py      # Atomic checkpoint read/write
+│   ├── gui/
+│   │   ├── __init__.py
+│   │   ├── ipc.py             # JSON-RPC 2.0 over stdio server
+│   │   └── template_manager.py # Template operations (load/insert/save)
+│   └── webapi/
+│       ├── __init__.py
+│       └── app.py             # FastAPI web service
+├── gui_frontend/
+│   ├── package.json
+│   ├── electron/
+│   │   └── main.js            # Electron main process
+│   └── src/
+│       ├── App.jsx
+│       ├── components/
+│       │   ├── DropZone.jsx
+│       │   ├── Toolbar.jsx
+│       │   ├── DocxViewer.jsx
+│       │   ├── EquationEditor.jsx
+│       │   ├── ExportDialog.jsx
+│       │   └── StatusBar.jsx
+│       └── ipc/
+│           └── client.js      # JSON-RPC client (stdio to Python)
+├── templates/
+│   ├── manifest.json          # Template registry (SHA-256, version, journal)
+│   ├── ieee/
+│   │   ├── template.docx
+│   │   ├── baseline.pdf
+│   │   └── fonts/             # Required fonts (Noto fallback)
+│   ├── springer/
+│   ├── elsevier/
+│   ├── wiley/
+│   ├── mdpi/
+│   └── nature/
+├── csl/
+│   ├── ieee.csl
+│   ├── springer.csl
+│   ├── elsevier.csl
+│   ├── mdpi.csl
+│   └── chicago-author-date.csl
+├── tests/
+│   ├── __init__.py
+│   ├── conftest.py            # Shared fixtures (test DOCX, mock data)
+│   ├── fixtures/
+│   │   ├── minimal.docx       # Tiny test DOCX (no real template dependency)
+│   │   ├── with_equations.docx
+│   │   ├── with_images.docx
+│   │   ├── with_tables.docx
+│   │   ├── with_crossrefs.docx
+│   │   └── sample.bib
+│   ├── test_config.py
+│   ├── test_docx_ingest.py
+│   ├── test_equation_extract.py
+│   ├── test_reference_parse.py
+│   ├── test_transformation.py
+│   ├── test_csl.py
+│   ├── test_crossref.py
+│   ├── test_semantic_audit.py
+│   ├── test_jats_compliance.py
+│   ├── test_visual.py
+│   ├── test_pdf_engine.py
+│   ├── test_ledger.py
+│   ├── test_checkpoint.py
+│   ├── test_memory.py
+│   ├── test_ipc.py
+│   └── test_orchestrator.py
+├── scripts/
+│   ├── check_templates.py     # Verify template checksums
+│   ├── visual-diff.js         # PDF visual regression (pure JS)
+│   ├── mem_check.py           # Memory monitoring
+│   ├── stress_test.py         # Batch processing + resume
+│   └── generate_fixtures.py   # Create test DOCX files
+├── build/
+│   ├── pyinstaller_spec.py
+│   ├── Dockerfile
+│   └── BUILD.md
+├── docs/
+│   ├── ARCHITECTURE.md
+│   ├── SCHEMAS.md             # All data structure definitions
+│   ├── CONFIG.md              # Configuration reference
+│   ├── USER_GUIDE.md
+│   ├── DEVELOPER_GUIDE.md
+│   └── screenshots/
+├── logs/                      # Runtime logs (gitignored)
+├── output/                    # Runtime output (gitignored)
+└── checkpoints/               # Runtime checkpoints (gitignored)
+
+================================================================================
+SCHEMA DEFINITIONS (referenced by all sessions)
+================================================================================
+
+--- models.py (Pydantic v2) ---
+
+class JournalConfig(BaseModel):
+    name: str                    # "ieee", "springer", etc.
+    display_name: str            # "IEEE Transactions"
+    template_docx: str           # Path to template.docx
+    baseline_pdf: str            # Path to baseline.pdf
+    csl_file: str                # Path to ieee.csl
+    fonts: list[str]             # ["Times New Roman", "Noto Serif"]
+    margins: dict[str, float]    # {"top": 2.54, "bottom": 2.54, ...}
+    citation_style: str          # "numeric" | "author-year"
+    page_size: str               # "a4" | "letter"
+    columns: int                 # 1 | 2
+
+class TemplateManifest(BaseModel):
+    version: str                 # "1.0.0"
+    journals: dict[str, JournalEntry]
+
+class JournalEntry(BaseModel):
+    file: str                    # "ieee/template.docx"
+    sha256: str                  # "a1b2c3..."
+    baseline_pdf: str            # "ieee/baseline.pdf"
+    baseline_sha256: str
+    version: str                 # "2024.1"
+    last_updated: str            # ISO date
+
+class IngestResult(BaseModel):
+    run_id: str
+    journal: str
+    template_path: str
+    checksum_valid: bool
+    ast: dict                    # Pandoc JSON AST
+    equations: list[Equation]
+    references: list[Reference]
+    images: list[ImageInfo]
+    tables: list[TableInfo]
+    cross_refs: list[CrossRef]
+    metadata: DocMetadata
+
+class Equation(BaseModel):
+    id: str                      # "eq-1"
+    latex: str                   # "E = mc^2"
+    omml: str | None             # Office Math ML (if from DOCX)
+    position: int                # Block index in AST
+
+class Reference(BaseModel):
+    key: str                     # "smith2024"
+    type: str                    # "article", "inproceedings"
+    authors: list[str]
+    title: str
+    year: int
+    raw_bibtex: str | None
+
+class ImageInfo(BaseModel):
+    id: str                      # "img-1"
+    filename: str
+    width: int | None
+    height: int | None
+    alt_text: str
+    position: int
+
+class TableInfo(BaseModel):
+    id: str                      # "tbl-1"
+    caption: str
+    rows: int
+    cols: int
+    has_merged_cells: bool
+    position: int
+
+class CrossRef(BaseModel):
+    ref_type: str                # "figure", "table", "equation", "section"
+    ref_id: str                  # "fig-1", "tbl-1", "eq-1"
+    label: str                   # "Figure 1"
+    position: int
+
+class DocMetadata(BaseModel):
+    title: str
+    authors: list[str]
+    abstract: str
+    keywords: list[str]
+    journal: str
+    date_submitted: str | None
+
+class TransformResult(BaseModel):
+    run_id: str
+    journal: str
+    ast: dict                    # Transformed Pandoc AST
+    citations_formatted: list[str]
+    warnings: list[str]
+
+class AuditResult(BaseModel):
+    run_id: str
+    passed: bool
+    errors: list[AuditError]
+    warnings: list[AuditWarning]
+
+class AuditError(BaseModel):
+    rule: str                    # "JATS-001", "CITE-003"
+    severity: str                # "error" | "warning"
+    message: str
+    location: str | None         # Block/position in AST
+
+class AuditWarning(BaseModel):
+    rule: str
+    message: str
+
+class Checkpoint(BaseModel):
+    run_id: str
+    step: str                    # "ingest", "transform", "audit", "render"
+    status: str                  # "started", "completed", "failed"
+    timestamp: str               # ISO 8601
+    data: dict                   # Step-specific data
+    checksum: str                # SHA-256 of data JSON
+
+class LedgerEntry(BaseModel):
+    run_id: str
+    step: str
+    status: str                  # "started", "completed", "failed"
+    started_at: str
+    completed_at: str | None
+    checkpoint_path: str | None
+    error: str | None
+
+class RunState(BaseModel):
+    run_id: str
+    journal: str
+    template_path: str
+    current_step: str
+    steps_completed: list[str]
+    steps_remaining: list[str]
+    started_at: str
+    last_checkpoint: str | None
+
+class ExportRequest(BaseModel):
+    run_id: str
+    formats: list[str]           # ["pdf", "docx", "latex", "jats"]
+    output_dir: str
+
+class ExportResult(BaseModel):
+    run_id: str
+    files: dict[str, str]        # {"pdf": "/path/to/file.pdf", ...}
+    sizes: dict[str, int]        # {"pdf": 245000, ...}
+
+class VisualDiffResult(BaseModel):
+    run_id: str
+    ssim_score: float
+    passed: bool                 # ssim >= threshold
+    diff_image_path: str | None
+    threshold: float
+
+================================================================================
+CONFIGURATION (settings.yaml)
+================================================================================
+
+app:
+  name: "PaperForge"
+  version: "2.0.0"
+
+limits:
+  max_ram_mb: 2800              # Hard ceiling (leave 200 MB headroom)
+  session_timeout_sec: 2700     # 45 min
+  heartbeat_warn_at: 0.85       # Warn at 85% wall-time
+  checkpoint_interval_steps: 1  # Checkpoint after every step
+
+rendering:
+  pdf_engine: "tectonic"        # "tectonic" | "pdflatex" | "xelatex"
+  pandoc_path: "bin/pandoc"
+  tectonic_path: "bin/tectonic"
+  default_export_formats:
+    - pdf
+    - docx
+    - latex
+
+audit:
+  visual_ssim_threshold: 0.95
+  visual_antialias_tolerance: 0.12
+  jats_strict_mode: true
+
+logging:
+  level: "INFO"                 # DEBUG | INFO | WARNING | ERROR
+  format: "json"
+  dir: "logs"
+  max_size_mb: 50
+  rotate: true
+
+gui:
+  ipc_mode: "stdio"            # "stdio" | "tcp"
+  tcp_port: 4242                # Only if ipc_mode: tcp
+  window_width: 1200
+  window_height: 800
+
+web:
+  host: "127.0.0.1"             # Localhost only by default
+  port: 8000
+  cors_origins:
+    - "http://localhost:3000"
+
+================================================================================
+MASTER SESSION TABLE
+================================================================================
+
+ #  Session Name                              Goal (PASS criteria)                          Time
+ -- ----------------------------------------- --------------------------------------------- ------
+  1 Project Bootstrap                         Repo init, deps, config, schemas, gitignore    40m
+  2 Data Schemas & Config System               Pydantic models, YAML loader, tests PASS       45m
+  3 SQLite Ledger & Checkpoint System          WAL mode, atomic writes, resume logic          45m
+  4 Heartbeat & MemoryGuard                    Timer, JSON summary, RSS < 2.8 GB             30m
+  5 Template Manifest & Download               6 DOCX + 6 PDF + manifest + SHA-256 verified  30m
+  6 Test Fixture Generator                     5 minimal DOCX for CI (no real templates)      30m
+  7 DOCX Ingestion — Core                      python-docx → Pandoc AST, checksums valid     45m
+  8 DOCX Ingestion — Equations                 LaTeX/OMML extraction, unit test PASS          45m
+  9 DOCX Ingestion — References & Images       BibTeX parse, image extract, alt-text          45m
+ 10 DOCX Ingestion — Tables & Cross-Refs       Merged cells, cross-ref resolution             45m
+ 11 JSON-RPC 2.0 Bridge (stdio)                Python server, Node client, round-trip test    45m
+ 12 Electron + React Skeleton                  Drop-zone, toolbar, viewer, IPC connected      45m
+ 13 Image & Equation Insertion                 Toolbar → IPC → DOCX modified, verify          45m
+ 14 Pandoc AST Transformation + Lua Filters    Font/alignment/table filters, unit test PASS   45m
+ 15 CSL Citation Engine                        Bibliography formatted (IEEE/Springer/etc.)    45m
+ 16 PDF Rendering Pipeline                     Pandoc + Tectonic → PDF, matches baseline      45m
+ 17 Multi-Format Export                         PDF + DOCX + LaTeX + JATS XML all working     45m
+ 18 Semantic Audit & JATS Compliance            Citation checks, 22-rule JATS validator        45m
+ 19 Visual Regression Testing                   SSIM ≥ 0.95 on all 6 baselines                45m
+ 20 Full Orchestrator (main.py)                 End-to-end: ingest→transform→audit→render      45m
+ 21 Desktop Packaging (PyInstaller)             .exe runs offline, <150 MB, 3 GB RAM OK       45m
+ 22 Web Service (FastAPI + React)               Browser UI, all endpoints, offline             45m
+ 23 Stress Test & Resume Recovery               10 papers, forced timeout, resume, no loss     45m
+ 24 Documentation & Screenshots                 README, user guide, architecture docs          45m
+ 25 CI/CD Pipeline                              GitHub Actions: lint, test, build, size check  30m
+ 26 Release Packaging & Checksums               .zip + SHA-256 + release notes                 30m
+
+ Total: ~26 sessions × ~43 min avg = ~18.6 hours
+
+================================================================================
+DETAILED SESSION PLAY-BY-PLAY
+================================================================================
+
+────────────────────────────────────────────────────────────────────────────────
+SESSION 1 — Project Bootstrap
+────────────────────────────────────────────────────────────────────────────────
+Goal: Clean repo with all directories, config, dependencies, and git setup.
+
+Tasks:
+  1. Create project directory
+     mkdir PaperForge && cd PaperForge
+
+  2. Initialize git
+     git init
+
+  3. Create .gitignore
+     cat > .gitignore <<'EOF'
+     __pycache__/
+     *.pyc
+     *.pyo
+     *.egg-info/
+     *.exe
+     *.sqlite
+     *.sqlite-wal
+     *.sqlite-shm
+     dist/
+     build/
+     node_modules/
+     logs/
+     output/
+     checkpoints/
+     .env
+     *.log
+     .DS_Store
+     Thumbs.db
+     EOF
+
+  4. Create full directory skeleton
+     mkdir -p src/{ingestion,transformation/filters,auditing,rendering,orchestration,gui,webapi}
+     mkdir -p gui_frontend/{electron,src/{components,ipc}}
+     mkdir -p templates/{ieee,springer,elsevier,wiley,mdpi,nature}
+     mkdir -p csl tests/fixtures scripts build docs/screenshots config/journals
+     mkdir -p logs output checkpoints
+
+  5. Create pyproject.toml (replaces requirements.txt for modern Python)
+     [project]
+     name = "paperforge"
+     version = "2.0.0"
+     requires-python = ">=3.10"
+     dependencies = [
+         "python-docx>=0.8.11",
+         "pypandoc>=1.14",
+         "citeproc-py>=0.6.0",
+         "pydantic>=2.0",
+         "psutil>=5.9",
+         "fastapi>=0.100",
+         "uvicorn>=0.23",
+         "pyyaml>=6.0",
+         "bibtexparser>=2.0",
+         "Pillow>=10.0",
+     ]
+     [project.optional-dependencies]
+     dev = [
+         "pytest>=7.0",
+         "pytest-cov>=4.0",
+         "ruff>=0.1",
+         "pre-commit>=3.0",
+     ]
+
+  6. Create README.md skeleton
+     # PaperForge 2.0
+     Offline-first academic paper formatting tool.
+     Drag-and-drop DOCX → properly formatted PDF/LaTeX/JATS for major journals.
+     ## Supported Journals
+     IEEE, Springer, Wiley, Elsevier, MDPI, Nature
+     ## Quick Start
+     (to be filled in Session 24)
+
+  7. Create __init__.py files for all packages
+     touch src/__init__.py src/ingestion/__init__.py src/transformation/__init__.py
+     touch src/auditing/__init__.py src/rendering/__init__.py src/orchestration/__init__.py
+     touch src/gui/__init__.py src/webapi/__init__.py tests/__init__.py
+
+  8. Verify environment
+     python --version  # Must be >= 3.10
+     node --version     # Must be >= 18
+     free -m           # Must show >= 3000 MB available
+
+  9. Initial commit
+     git add . && git commit -m "init: bootstrap repo, config, deps, directory structure"
+
+  10. Write session summary
+      Write session_01_summary.json:
+      {"run_id":"2026-04-27-01","status":"PASS","notes":"repo bootstrapped"}
+
+PASS check: git log shows 1 commit, all directories exist, pip install succeeds.
+
+────────────────────────────────────────────────────────────────────────────────
+SESSION 2 — Data Schemas & Config System
+────────────────────────────────────────────────────────────────────────────────
+Goal: All data structures defined as Pydantic models, YAML config loads correctly.
+
+Tasks:
+  1. Write src/models.py (all Pydantic models from SCHEMA DEFINITIONS above)
+     - JournalConfig, TemplateManifest, JournalEntry
+     - IngestResult, Equation, Reference, ImageInfo, TableInfo, CrossRef
+     - DocMetadata, TransformResult, AuditResult, AuditError, AuditWarning
+     - Checkpoint, LedgerEntry, RunState
+     - ExportRequest, ExportResult, VisualDiffResult
+
+  2. Write src/config.py
+     - load_config(path="config/settings.yaml") → AppConfig
+     - load_journal_config(journal_name) → JournalConfig
+     - Config loader reads YAML, validates via Pydantic, returns typed objects
+     - Fallback defaults for all fields
+
+  3. Write config/settings.yaml (copy from CONFIGURATION section above)
+
+  4. Write config/journals/ieee.yaml (example for one journal)
+     name: "ieee"
+     display_name: "IEEE Transactions"
+     template_docx: "templates/ieee/template.docx"
+     baseline_pdf: "templates/ieee/baseline.pdf"
+     csl_file: "csl/ieee.csl"
+     fonts: ["Times New Roman", "Noto Serif"]
+     margins: {top: 2.54, bottom: 2.54, left: 1.91, right: 1.91}
+     citation_style: "numeric"
+     page_size: "letter"
+     columns: 2
+
+  5. Repeat for springer.yaml, elsevier.yaml, wiley.yaml, mdpi.yaml, nature.yaml
+
+  6. Write tests/test_config.py
+     - test_load_default_config
+     - test_load_journal_config
+     - test_invalid_journal_raises
+     - test_config_overrides
+
+  7. Run pytest tests/test_config.py → all PASS
+
+  8. Commit
+     git add . && git commit -m "add: pydantic schemas + YAML config system"
+
+  9. Write session_02_summary.json
+
+PASS check: pytest tests/test_config.py passes, all models importable.
+
+────────────────────────────────────────────────────────────────────────────────
+SESSION 3 — SQLite Ledger & Checkpoint System
+────────────────────────────────────────────────────────────────────────────────
+Goal: Crash-safe state persistence with atomic checkpoints.
+
+Tasks:
+  1. Write src/orchestration/ledger.py
+     - Ledger class with SQLite WAL mode
+     - Methods: create_run(), log_step(), get_run_state(), list_runs()
+     - Schema: runs(run_id PK, journal, template_path, created_at)
+              steps(run_id FK, step, status, started_at, completed_at, error)
+     - Enable WAL: PRAGMA journal_mode=WAL
+     - Enable foreign keys: PRAGMA foreign_keys=ON
+
+  2. Write src/orchestration/checkpoint.py
+     - Atomic write: write JSON to .tmp, then os.rename() (atomic on same FS)
+     - SHA-256 checksum embedded in checkpoint file
+     - load_checkpoint() validates checksum before returning
+     - On corrupt checkpoint: log warning, return None (caller re-runs step)
+     - Methods: save(run_id, step, data), load(run_id, step), list_checkpoints(run_id)
+
+  3. Write tests/test_ledger.py
+     - test_create_run
+     - test_log_step_and_query
+     - test_wal_mode_enabled
+     - test_concurrent_access (two connections)
+
+  4. Write tests/test_checkpoint.py
+     - test_save_and_load
+     - test_corrupt_checkpoint_returns_none
+     - test_atomic_write (simulate crash mid-write)
+     - test_checksum_validation
+
+  5. Run pytest tests/test_ledger.py tests/test_checkpoint.py → all PASS
+
+  6. Verify WAL mode
+     sqlite3 ledger.sqlite "PRAGMA journal_mode;" → wal
+
+  7. Commit
+     git add . && git commit -m "add: SQLite ledger + atomic checkpoint system"
+
+  8. Write session_03_summary.json
+
+PASS check: WAL mode confirmed, atomic checkpoint test passes, corrupt file handled.
+
+────────────────────────────────────────────────────────────────────────────────
+SESSION 4 — Heartbeat & MemoryGuard
+────────────────────────────────────────────────────────────────────────────────
+Goal: Session timer with auto-summary, memory guard keeping RSS < 2.8 GB.
+
+Tasks:
+  1. Write src/orchestration/heartbeat.py
+     - SessionHeartbeat class
+     - Starts timer on init, writes JSON summary at 85% wall-time
+     - Summary includes: run_id, steps_completed, memory_peak_mb, elapsed_sec
+     - Can be queried mid-session for status
+
+  2. Write src/orchestration/memory.py
+     - MemoryGuard context manager
+     - Checks RSS before and after block
+     - Calls gc.collect() after each heavy operation
+     - Raises MemoryLimitExceeded if RSS > max_ram_mb
+     - Decorator: @memory_guard for wrapping functions
+
+  3. Write tests/test_memory.py
+     - test_guard_stays_under_limit
+     - test_gc_called_after_exit
+     - test_raises_on_exceeded (mock psutil)
+
+  4. Write tests/test_heartbeat.py
+     - test_summary_written_at_timeout (use 2-sec timeout)
+     - test_summary_json_parsable
+
+  5. Run scripts/mem_check.py (manual verification)
+     - Allocates 1 GB array, runs MemoryGuard, checks peak reported
+
+  6. Commit
+     git add . && git commit -m "add: heartbeat timer + memory guard"
+
+  7. Write session_04_summary.json
+
+PASS check: heartbeat writes JSON, MemoryGuard enforces limit, gc.collect() runs.
+
+────────────────────────────────────────────────────────────────────────────────
+SESSION 5 — Template Manifest & Download
+────────────────────────────────────────────────────────────────────────────────
+Goal: 6 journal templates with SHA-256 verified manifest.
+
+Tasks:
+  1. Create templates/manifest.json
+     {
+       "version": "1.0.0",
+       "journals": {
+         "ieee": {
+           "file": "ieee/template.docx",
+           "sha256": "<computed>",
+           "baseline_pdf": "ieee/baseline.pdf",
+           "baseline_sha256": "<computed>",
+           "version": "2024.1",
+           "last_updated": "2024-01-01"
+         },
+         ... (6 journals total)
+       }
+     }
+
+  2. Download/stage official DOCX templates
+     - IEEE: https://template-selector.ieee.org/
+     - Springer: https://www.springer.com/gp/authors-editors/book-authors-editors/your-publication-journey/manuscript-preparation
+     - Elsevier: https://www.elsevier.com/researcher/author/policies-and-guidelines/latex-instructions
+     - Wiley: https://authorservices.wiley.com/author-resources/Journal-Authors/Prepare/index.html
+     - MDPI: https://www.mdpi.com/authors/latex
+     - Nature: https://www.nature.com/documents/nature-summary-paragraph.pdf
+
+     NOTE: If offline/cannot download, create placeholder DOCX using python-docx
+     that mimics each journal's structure (title, abstract, sections, refs).
+     Run: python scripts/generate_templates.py (script created in this session)
+
+  3. Compute SHA-256 for each file
+     for f in templates/*/*.docx templates/*/*.pdf; do
+       sha256sum "$f"
+     done > checksums.txt
+
+  4. Update manifest.json with actual checksums
+
+  5. Write scripts/check_templates.py
+     - Loads manifest.json
+     - Recomputes SHA-256 for all files
+     - Exits 0 if all match, exits 1 with error details if not
+
+  6. Run python scripts/check_templates.py → "All templates verified"
+
+  7. Commit
+     git add . && git commit -m "add: 6 journal templates + SHA-256 manifest"
+
+  8. Write session_05_summary.json
+
+PASS check: check_templates.py prints "All templates verified", manifest parses.
+
+────────────────────────────────────────────────────────────────────────────────
+SESSION 6 — Test Fixture Generator
+────────────────────────────────────────────────────────────────────────────────
+Goal: Minimal DOCX files for CI (no dependency on real templates).
+
+Tasks:
+  1. Write scripts/generate_fixtures.py
+     - Creates tests/fixtures/minimal.docx (title + 1 paragraph)
+     - Creates tests/fixtures/with_equations.docx (title + 2 equations)
+     - Creates tests/fixtures/with_images.docx (title + 1 embedded image)
+     - Creates tests/fixtures/with_tables.docx (title + 1 table with merged cells)
+     - Creates tests/fixtures/with_crossrefs.docx (title + figure + ref to it)
+     - Creates tests/fixtures/sample.bib (3 BibTeX entries)
+
+  2. Run python scripts/generate_fixtures.py → all 6 files created
+
+  3. Verify each fixture is a valid DOCX
+     python -c "
+     from docx import Document
+     for f in ['minimal','with_equations','with_images','with_tables','with_crossrefs']:
+         doc = Document(f'tests/fixtures/{f}.docx')
+         print(f'{f}.docx: {len(doc.paragraphs)} paragraphs, {len(doc.tables)} tables')
+     "
+
+  4. Commit
+     git add . && git commit -m "add: test fixtures (no real template dependency)"
+
+  5. Write session_06_summary.json
+
+PASS check: all 5 DOCX + 1 BIB files exist, python-docx opens each without error.
+
+────────────────────────────────────────────────────────────────────────────────
+SESSION 7 — DOCX Ingestion — Core
+────────────────────────────────────────────────────────────────────────────────
+Goal: Load DOCX → Pandoc AST with metadata, checksum validation.
+
+Tasks:
+  1. Write src/ingestion/docx_ingest.py
+     - load_template(journal, template_path) → IngestResult
+     - Steps:
+       a. Validate SHA-256 against manifest.json
+       b. Open DOCX with python-docx
+       c. Extract metadata (title, authors, abstract, keywords)
+       d. Convert DOCX → Pandoc JSON AST via pypandoc
+       e. Parse AST blocks into structured data
+     - Returns IngestResult with ast, metadata, checksum_valid
+
+  2. Write src/ingestion/equation_extract.py
+     - extract_equations(doc) → list[Equation]
+     - Detects OMML (Office Math ML) elements in DOCX XML
+     - Converts OMML → LaTeX using XSLT or manual mapping
+     - Handles both inline and display equations
+
+  3. Write src/ingestion/reference_parse.py
+     - extract_references(doc) → list[Reference]
+     - Finds bibliography section in DOCX
+     - Parses BibTeX/EndNote/plain-text references
+     - Normalizes to Reference model
+
+  4. Write tests/test_docx_ingest.py
+     - test_load_minimal (uses fixtures/minimal.docx)
+     - test_checksum_validation
+     - test_invalid_docx_raises
+     - test_metadata_extraction
+     - test_ast_not_empty
+
+  5. Run pytest tests/test_docx_ingest.py → PASS
+
+  6. Commit
+     git add . && git commit -m "add: DOCX ingestion core (AST + metadata)"
+
+  7. Write session_07_summary.json
+
+PASS check: load_template returns IngestResult with non-empty ast, metadata populated.
+
+────────────────────────────────────────────────────────────────────────────────
+SESSION 8 — DOCX Ingestion — Equations
+────────────────────────────────────────────────────────────────────────────────
+Goal: LaTeX/OMML equations extracted from DOCX, unit tests pass.
+
+Tasks:
+  1. Implement OMML → LaTeX conversion in equation_extract.py
+     - Parse w:oMath elements from DOCX XML (lxml)
+     - Map OMML elements to LaTeX: m:r → text, m:f → \frac, m:rad → \sqrt
+     - Handle subscripts (_{}), superscripts (^{}), matrices, integrals
+
+  2. Test with fixtures/with_equations.docx
+     - Verify at least 2 equations extracted
+     - Verify LaTeX output matches expected (E=mc^2, quadratic formula)
+
+  3. Write tests/test_equation_extract.py
+     - test_extract_from_docx
+     - test_omml_to_latex_basic
+     - test_inline_vs_display
+     - test_complex_equation (matrix, integral)
+
+  4. Run pytest tests/test_equation_extract.py → PASS
+
+  5. Commit
+     git add . && git commit -m "add: equation extraction (OMML → LaTeX)"
+
+  6. Write session_08_summary.json
+
+PASS check: equations extracted with correct LaTeX, inline/display distinguished.
+
+────────────────────────────────────────────────────────────────────────────────
+SESSION 9 — DOCX Ingestion — References & Images
+────────────────────────────────────────────────────────────────────────────────
+Goal: Bibliography parsed, images extracted with metadata.
+
+Tasks:
+  1. Implement reference_parse.py
+     - Detect bibliography section (style="Bibliography" or heading "References")
+     - Parse common formats: BibTeX, EndNote, plain-text numbered
+     - Use bibtexparser for .bib content
+     - Fallback: regex-based parsing for plain-text refs
+
+  2. Implement image extraction in docx_ingest.py
+     - Iterate DOCX relationships for image parts
+     - Extract image binary, save to temp dir
+     - Get dimensions from EMU (English Metric Units) → pixels
+     - Get alt text from docPr elements
+     - Return list[ImageInfo]
+
+  3. Write tests/test_reference_parse.py
+     - test_parse_bibtex (from sample.bib)
+     - test_parse_plain_text_refs
+     - test_empty_bibliography
+
+  4. Write tests for image extraction (in test_docx_ingest.py)
+     - test_extract_images (from fixtures/with_images.docx)
+     - test_image_dimensions
+     - test_image_alt_text
+
+  5. Run pytest → PASS
+
+  6. Commit
+     git add . && git commit -m "add: reference parsing + image extraction"
+
+  7. Write session_09_summary.json
+
+PASS check: 3 references parsed from sample.bib, 1 image extracted with dimensions.
+
+────────────────────────────────────────────────────────────────────────────────
+SESSION 10 — DOCX Ingestion — Tables & Cross-References
+────────────────────────────────────────────────────────────────────────────────
+Goal: Complex tables and cross-references handled correctly.
+
+Tasks:
+  1. Implement table extraction in docx_ingest.py
+     - Parse w:tbl elements
+     - Detect merged cells (w:gridSpan, w:vMerge)
+     - Extract table caption (look for style="TableCaption" or "Caption")
+     - Return list[TableInfo] with dimensions and merge info
+
+  2. Implement cross-reference resolution in docx_ingest.py
+     - Find w:fldSimple / w:fldChar elements (Word field codes)
+     - Parse REF fields: REF _Ref12345 \h
+     - Map bookmark names to figure/table/equation IDs
+     - Return list[CrossRef]
+
+  3. Write tests/test_docx_ingest.py additions
+     - test_extract_table_with_merges (from fixtures/with_tables.docx)
+     - test_table_dimensions
+     - test_crossref_resolution (from fixtures/with_crossrefs.docx)
+     - test_crossref_type_detection
+
+  4. Run pytest → PASS
+
+  5. Commit
+     git add . && git commit -m "add: table extraction + cross-reference resolution"
+
+  6. Write session_10_summary.json
+
+PASS check: merged cells detected, cross-refs resolve to correct figure/table IDs.
+
+────────────────────────────────────────────────────────────────────────────────
+SESSION 11 — JSON-RPC 2.0 Bridge (stdio)
+────────────────────────────────────────────────────────────────────────────────
+Goal: Python ↔ Node IPC with zero external dependencies.
+
+Tasks:
+  1. Write src/gui/ipc.py — JSON-RPC 2.0 server over stdio
+     - Reads JSON-RPC requests from stdin (newline-delimited)
+     - Writes responses to stdout
+     - Methods exposed:
+       load_template(journal, path) → IngestResult
+       insert_image(run_id, image_path) → status
+       insert_equation(run_id, latex, position) → status
+       insert_table(run_id, rows, cols) → status
+       save(run_id) → ExportResult
+       get_status(run_id) → RunState
+     - Errors: JSON-RPC error codes (-32600 to -32603)
+     - Logging goes to stderr (not stdout)
+
+  2. Write gui_frontend/src/ipc/client.js — Node.js JSON-RPC client
+     - Spawns Python process via child_process.spawn
+     - Sends JSON-RPC requests to child's stdin
+     - Reads responses from child's stdout
+     - Promise-based API: ipc.invoke(method, params)
+     - Handles timeouts and process crashes
+
+  3. Write tests/test_ipc.py
+     - test_round_trip (Python server + Python client, via subprocess)
+     - test_load_template_via_rpc
+     - test_invalid_method_returns_error
+     - test_malformed_json_handled
+
+  4. Run pytest tests/test_ipc.py → PASS
+
+  5. Manual test: start server, send JSON via command line
+     echo '{"jsonrpc":"2.0","method":"get_status","id":1}' | python -m src.gui.ipc
+
+  6. Commit
+     git add . && git commit -m "add: JSON-RPC 2.0 stdio bridge (zero deps)"
+
+  7. Write session_11_summary.json
+
+PASS check: round-trip test passes, Node client can call Python methods.
+
+────────────────────────────────────────────────────────────────────────────────
+SESSION 12 — Electron + React Skeleton
+────────────────────────────────────────────────────────────────────────────────
+Goal: Desktop UI with drag-drop, toolbar, document viewer, IPC connected.
+
+Tasks:
+  1. Initialize gui_frontend/package.json
+     {
+       "name": "paperforge-gui",
+       "version": "2.0.0",
+       "main": "electron/main.js",
+       "scripts": {
+         "start": "electron .",
+         "build": "esbuild src/App.jsx --bundle --outfile=dist/bundle.js",
+         "dev": "concurrently \"esbuild src/App.jsx --bundle --watch\" \"electron .\""
+       }
+     }
+
+  2. Install dependencies
+     cd gui_frontend && npm init -y
+     npm install react react-dom electron esbuild
+
+  3. Write electron/main.js
+     - Create BrowserWindow (1200×800)
+     - Spawn Python IPC server as child process
+     - Expose ipcMain.handle() for renderer → main → Python
+     - Load index.html
+
+  4. Write src/App.jsx (root component)
+     - State: currentRunId, journal, step, files
+     - Renders: DropZone + Toolbar + DocxViewer + StatusBar
+
+  5. Write src/components/DropZone.jsx
+     - HTML5 drag-and-drop
+     - Accepts only .docx files
+     - On drop: calls ipc.invoke('load_template', {journal, path})
+     - Shows loading spinner during ingestion
+
+  6. Write src/components/Toolbar.jsx
+     - Buttons: Insert Image, Insert Equation, Insert Table, Insert Symbol
+     - Export dropdown: PDF, DOCX, LaTeX, JATS
+     - Disabled until template loaded
+
+  7. Write src/components/DocxViewer.jsx
+     - Renders DOCX content as HTML (read-only preview)
+     - Shows equations, images, tables in-place
+     - Scroll sync with source
+
+  8. Write src/components/StatusBar.jsx
+     - Shows: current step, memory usage, elapsed time
+     - Color-coded: green (<70%), yellow (70-85%), red (>85%)
+
+  9. Write public/index.html
+     - <div id="root">
+     - Link to bundle.js
+
+  10. Build and test
+      npm run build && npm start
+      → Electron window opens, drag-drop works, toolbar visible
+
+  11. Commit
+      git add . && git commit -m "add: Electron + React desktop UI skeleton"
+
+  12. Write session_12_summary.json
+
+PASS check: Electron launches, drag-drop triggers IPC call, toolbar buttons render.
+
+────────────────────────────────────────────────────────────────────────────────
+SESSION 13 — Image & Equation Insertion
+────────────────────────────────────────────────────────────────────────────────
+Goal: Toolbar actions modify the DOCX through IPC.
+
+Tasks:
+  1. Write src/gui/template_manager.py
+     - TemplateManager class
+     - add_image(run_id, image_path) → inserts image into DOCX at cursor
+     - add_equation(run_id, latex_str) → converts LaTeX → OMML, inserts
+     - add_table(run_id, rows, cols, data) → inserts table
+     - save(run_id, output_path) → writes modified DOCX to disk
+     - All operations update the Pandoc AST and sync back to DOCX
+
+  2. Update src/gui/ipc.py to expose new methods
+     - insert_image, insert_equation, insert_table
+     - Each delegates to TemplateManager
+
+  3. Update Toolbar.jsx
+     - "Insert Image" → file dialog → selected path → ipc.invoke('insert_image')
+     - "Insert Equation" → modal with LaTeX textarea → ipc.invoke('insert_equation')
+     - "Insert Table" → rows/cols dialog → ipc.invoke('insert_table')
+
+  4. Verify DOCX modification
+     python -c "
+     from docx import Document
+     doc = Document('output/modified.docx')
+     print(f'Images: {len(doc.inline_shapes)}')
+     print(f'Tables: {len(doc.tables)}')
+     "
+
+  5. Commit
+     git add . && git commit -m "add: image/equation/table insertion via toolbar"
+
+  6. Write session_13_summary.json
+
+PASS check: inserting image/equation/table through UI results in modified DOCX.
+
+────────────────────────────────────────────────────────────────────────────────
+SESSION 14 — Pandoc AST Transformation + Lua Filters
+────────────────────────────────────────────────────────────────────────────────
+Goal: AST reshaped to journal-specific typographic requirements.
+
+Tasks:
+  1. Ensure Pandoc binary is available
+     bin/pandoc --version → shows 3.3+
+     (If not present: download from https://github.com/jgm/pandoc/releases)
+
+  2. Write src/transformation/engine.py
+     - transform_ast(ast, journal_config) → TransformResult
+     - Pipeline:
+       a. Apply Lua filters (fonts, alignment, tables)
+       b. Apply journal-specific page settings (margins, columns)
+       c. Resolve cross-references (replace REF fields with "Figure N")
+       d. Format equations for target (OMML for DOCX, LaTeX for PDF)
+     - Uses subprocess: pandoc -f json -t json -L filter.lua
+
+  3. Write src/transformation/filters/fonts-and-alignment.lua
+     - Sets font classes: journal-title, journal-abstract, journal-body
+     - Applies alignment rules per journal (left-aligned, justified, etc.)
+     - Handles heading levels → journal section numbering
+
+  4. Write src/transformation/filters/tables.lua
+     - Converts tables to journal format
+     - Handles merged cells → multirow/multicol in LaTeX
+     - Adds table captions in correct position (above/below per journal)
+
+  5. Write src/transformation/filters/crossrefs.lua
+     - Replaces cross-reference fields with formatted text
+     - "Figure 1", "Table 2", "Equation (3)"
+     - Hyperlinks in PDF output
+
+  6. Write src/transformation/crossref.py
+     - Cross-reference resolver
+     - Builds index of all figures/tables/equations with their numbers
+     - Replaces REF fields in AST
+
+  7. Write tests/test_transformation.py
+     - test_font_classes_applied
+     - test_table_formatting
+     - test_crossref_resolved
+     - test_journal_specific_settings
+
+  8. Run pytest → PASS
+
+  9. Commit
+     git add . && git commit -m "add: Pandoc AST transformation + Lua filters"
+
+  10. Write session_14_summary.json
+
+PASS check: transformed AST has journal-specific classes, cross-refs resolved.
+
+────────────────────────────────────────────────────────────────────────────────
+SESSION 15 — CSL Citation Engine
+────────────────────────────────────────────────────────────────────────────────
+Goal: Bibliography formatted per journal's citation style.
+
+Tasks:
+  1. Add CSL files to csl/ directory
+     - ieee.csl, springer.csl, elsevier.csl, mdpi.csl
+     - Source: https://github.com/citation-style-language/styles
+     - Include at least 4 styles for MVP
+
+  2. Write src/transformation/csl.py
+     - apply_csl(ast, journal_config) → formatted citations
+     - Uses citeproc-py to process bibliography
+     - Handles numeric [1], [2] vs author-year (Smith, 2024)
+     - Outputs formatted bibliography block for AST
+
+  3. Integration with engine.py
+     - After Lua filters, apply CSL formatting
+     - Replace raw citation keys with formatted strings
+     - Generate bibliography section at end of document
+
+  4. Write tests/test_csl.py
+     - test_ieee_numeric_format
+     - test_springer_author_year
+     - test_multiple_citations
+     - test_missing_reference_warning
+
+  5. Run pytest → PASS
+
+  6. Commit
+     git add . && git commit -m "add: CSL citation engine (IEEE, Springer, etc.)"
+
+  7. Write session_15_summary.json
+
+PASS check: bibliography renders as [1], [2] (IEEE) or (Smith, 2024) (Springer).
+
+────────────────────────────────────────────────────────────────────────────────
+SESSION 16 — PDF Rendering Pipeline
+────────────────────────────────────────────────────────────────────────────────
+Goal: Pandoc + Tectonic produces valid PDF, matches baseline.
+
+Tasks:
+  1. Bundle Tectonic binary
+     - Download from https://github.com/tectonic-typesetting/tectonic/releases
+     - Place in bin/tectonic (Linux) or bin/tectonic.exe (Windows)
+     - Verify: bin/tectonic --version → shows 0.14+
+
+  2. Write src/rendering/pdf_engine.py
+     - render_pdf(ast, journal_config, output_path) → PDF file
+     - Pipeline:
+       a. Pandoc: AST → LaTeX (pandoc -f json -t latex)
+       b. Apply journal LaTeX class (IEEEtran, svjour3, etc.)
+       c. Tectonic: LaTeX → PDF (tectonic --outdir output/ file.tex)
+     - MemoryGuard wraps the Tectonic call
+     - Timeout: 120 seconds max
+
+  3. Journal LaTeX class files
+     - IEEE: IEEEtran.cls (bundled or generated)
+     - Springer: svjour3.cls, svmult.cls
+     - Elsevier: elsarticle.cls
+     - Note: If class files not available, use pandoc's default article.cls
+       with journal-specific margin/font overrides
+
+  4. Write src/rendering/latex_export.py
+     - export_latex(ast, journal_config, output_path) → .tex file
+     - Standalone LaTeX document with preamble
+     - Includes all packages needed (amsmath, graphicx, hyperref, etc.)
+
+  5. Write tests/test_pdf_engine.py
+     - test_render_minimal_pdf
+     - test_pdf_file_valid (check header starts with %PDF)
+     - test_memory_guard_active
+     - test_timeout_handling
+
+  6. Manual visual check
+     - Render templates/ieee/template.docx → output.pdf
+     - Compare visually with templates/ieee/baseline.pdf
+
+  7. Commit
+     git add . && git commit -m "add: PDF rendering (Pandoc + Tectonic)"
+
+  8. Write session_16_summary.json
+
+PASS check: PDF generated, file is valid PDF, size > 0, no crash under 3 GB.
+
+────────────────────────────────────────────────────────────────────────────────
+SESSION 17 — Multi-Format Export
+────────────────────────────────────────────────────────────────────────────────
+Goal: PDF + DOCX + LaTeX + JATS XML all export correctly.
+
+Tasks:
+  1. Write src/rendering/docx_export.py
+     - export_docx(ast, journal_config, output_path) → .docx file
+     - Uses python-docx to build DOCX from AST
+     - Applies journal formatting (fonts, margins, styles)
+     - Embeds images, equations (OMML), tables
+
+  2. Write src/rendering/jats_export.py
+     - export_jats(ast, journal_config, output_path) → .xml file
+     - Converts Pandoc AST → JATS XML
+     - Uses pandoc: pandoc -f json -t jats
+     - Validates output against JATS schema
+
+  3. Update src/orchestration/main.py (partial — full orchestrator in Session 20)
+     - Export function: export_all(run_id, formats, output_dir)
+     - Calls appropriate renderer for each format
+     - Returns ExportResult with file paths and sizes
+
+  4. Write tests for each exporter
+     - test_docx_export_roundtrip (export → re-read → verify content)
+     - test_jats_export_valid_xml
+     - test_latex_export_compilable
+     - test_all_formats_for_minimal_docx
+
+  5. Run pytest → PASS
+
+  6. Commit
+     git add . && git commit -m "add: multi-format export (PDF, DOCX, LaTeX, JATS)"
+
+  7. Write session_17_summary.json
+
+PASS check: 4 files produced for minimal.docx, each valid format.
+
+────────────────────────────────────────────────────────────────────────────────
+SESSION 18 — Semantic Audit & JATS Compliance
+────────────────────────────────────────────────────────────────────────────────
+Goal: All citations resolved, JATS 22-rule validator passes.
+
+Tasks:
+  1. Write src/auditing/semantic.py
+     - check_citations(ast, references) → AuditResult
+     - Extract all \cite{} keys from AST
+     - Cross-check against reference list
+     - Report: unresolved keys, duplicate keys, missing entries
+     - Check: every figure/table has a caption, every caption has a number
+
+  2. Write src/auditing/jats_compliance.py
+     - validate_jats(xml_path) → AuditResult
+     - 22 rules (simplified for MVP):
+       JATS-001: Root element is <article>
+       JATS-002: <front> contains <journal-meta>
+       JATS-003: <front> contains <article-meta>
+       JATS-004: Title is non-empty
+       JATS-005: At least one author
+       JATS-006: Abstract is present
+       JATS-007: Body contains at least one <sec>
+       JATS-008: All <xref> targets exist
+       JATS-009: All <fig> have <caption>
+       JATS-010: All <table-wrap> have <caption>
+       JATS-011: Bibliography is non-empty
+       JATS-012: All <ref> have <mixed-citation> or <element-citation>
+       JATS-013: No orphaned <fn> elements
+       JATS-014: <kwd> present if abstract present
+       JATS-015: DOI format valid (if present)
+       JATS-016: Dates are valid ISO format
+       JATS-017: No empty <p> elements
+       JATS-018: Language attribute present
+       JATS-019: Article type attribute present
+       JATS-020: Volume/issue/page or elocation-id present
+       JATS-021: All internal links are valid
+       JATS-022: Character encoding declared
+
+  3. Write tests/test_semantic_audit.py
+     - test_all_citations_resolved
+     - test_unresolved_citation_detected
+     - test_missing_caption_detected
+
+  4. Write tests/test_jats_compliance.py
+     - test_valid_jats_passes
+     - test_missing_title_fails
+     - test_missing_author_fails
+     - test_orphaned_xref_fails
+
+  5. Run pytest → PASS
+
+  6. Commit
+     git add . && git commit -m "add: semantic audit + JATS 22-rule compliance"
+
+  7. Write session_18_summary.json
+
+PASS check: valid JATS returns errors:[], invalid JATS catches specific rules.
+
+────────────────────────────────────────────────────────────────────────────────
+SESSION 19 — Visual Regression Testing
+────────────────────────────────────────────────────────────────────────────────
+Goal: SSIM ≥ 0.95 on all 6 journal baselines.
+
+Tasks:
+  1. Add scripts/visual-diff.js (pure Node.js)
+     - Uses pdfjs-dist to render PDFs to PNGs
+     - Uses pixelmatch for pixel comparison
+     - Computes SSIM score
+     - Outputs diff images (red = changed pixels)
+     - Threshold: 0.95 SSIM, antialiasing tolerance 0.12
+
+  2. Install Node deps
+     cd gui_frontend && npm install pdfjs-dist pixelmatch pngjs
+
+  3. Write src/auditing/visual.py (Python wrapper)
+     - visual_check(baseline_pdf, generated_pdf) → VisualDiffResult
+     - Calls node scripts/visual-diff.js via subprocess
+     - Parses JSON output from Node script
+     - Returns SSIM score + pass/fail
+
+  4. Write tests/test_visual.py
+     - test_identical_pdf_returns_ssim_1 (two copies of same file)
+     - test_different_pdf_fails
+     - test_threshold_configurable
+
+  5. Manual test: render each journal template, compare with baseline
+     for j in ieee springer elsevier wiley mdpi nature; do
+       python -m src.rendering.pdf_engine --journal $j --docx templates/$j/template.docx
+       node scripts/visual-diff.js templates/$j/baseline.pdf output/$j.pdf
+     done
+
+  6. Commit
+     git add . && git commit -m "add: visual regression testing (SSIM-based)"
+
+  7. Write session_19_summary.json
+
+PASS check: SSIM computed for each journal, diff images generated.
+
+────────────────────────────────────────────────────────────────────────────────
+SESSION 20 — Full Orchestrator (main.py)
+────────────────────────────────────────────────────────────────────────────────
+Goal: Single entry point: ingest → transform → audit → render → export.
+
+Tasks:
+  1. Write src/orchestration/main.py
+     - CLI interface: python -m src.orchestration.main [options]
+     - Options:
+       --journal NAME       Journal identifier
+       --docx PATH          Input DOCX path
+       --export FORMATS     Comma-separated: pdf,docx,latex,jats
+       --output-dir DIR     Output directory (default: output/<run_id>/)
+       --resume RUN_ID      Resume from checkpoint
+       --config PATH        Custom config file
+       --verbose            Enable debug logging
+     - Pipeline:
+       a. Create run_id (timestamp-based)
+       b. Start heartbeat
+       c. Initialize ledger
+       d. Step 1: Ingest → checkpoint
+       e. Step 2: Transform → checkpoint
+       f. Step 3: Audit (semantic + JATS) → checkpoint
+       g. Step 4: Render → checkpoint
+       h. Step 5: Export → checkpoint
+       i. Step 6: Visual check → checkpoint
+       j. Final: mark run complete in ledger
+
+  2. Checkpoint after every step
+     - Each step writes checkpoint/<run_id>/<step>.json
+     - Atomic write (temp → rename)
+     - SHA-256 embedded
+
+  3. Resume logic
+     - --resume reads ledger for last completed step
+     - Loads checkpoint, skips completed steps
+     - Re-runs failed step from scratch
+
+  4. Error handling
+     - On exception: log to logs/<run_id>.log
+     - Mark step as "failed" in ledger
+     - Do NOT delete checkpoint (allows resume)
+     - Exit with non-zero code
+
+  5. Write tests/test_orchestrator.py
+     - test_full_pipeline_minimal (fixtures/minimal.docx)
+     - test_checkpoint_after_each_step
+     - test_resume_after_failure
+     - test_exit_code_on_success
+
+  6. Manual end-to-end test
+     python -m src.orchestration.main \
+       --journal ieee \
+       --docx templates/ieee/template.docx \
+       --export pdf,docx,latex,jats
+     → Produces output/<run_id>/ with 4 files
+
+  7. Commit
+     git add . && git commit -m "add: full orchestrator with checkpoint/resume"
+
+  8. Write session_20_summary.json
+
+PASS check: end-to-end run produces 4 export files, checkpoint files exist.
+
+────────────────────────────────────────────────────────────────────────────────
+SESSION 21 — Desktop Packaging (PyInstaller)
+────────────────────────────────────────────────────────────────────────────────
+Goal: Standalone .exe, <150 MB, runs offline under 3 GB RAM.
+
+Tasks:
+  1. pip install pyinstaller
+
+  2. Write build/pyinstaller_spec.py
+     - Analysis:
+       - Hidden imports: docx, pandocfilters, citeproc, pydantic
+       - Data files: templates/, csl/, config/, bin/pandoc, bin/tectonic
+       - Excludes: tkinter, matplotlib, numpy (not needed)
+     - Directory mode (not one-file) for faster startup
+     - Output: dist/PaperForge/
+
+  3. Build
+     pyinstaller build/pyinstaller_spec.py
+
+  4. Test executable
+     dist/PaperForge/PaperForge.exe --journal ieee --docx templates/ieee/template.docx --export pdf
+     → Produces output without Python installed
+
+  5. Verify constraints
+     - Size: du -sh dist/PaperForge/ → < 150 MB
+     - Memory: run with psutil monitoring → peak < 2.8 GB
+     - Offline: disconnect network, run again → works
+
+  6. Write build/BUILD.md
+     - Build steps for Windows/Linux/macOS
+     - Dependency list
+     - Troubleshooting common issues
+
+  7. Commit
+     git add . && git commit -m "add: PyInstaller desktop packaging"
+
+  8. Write session_21_summary.json
+
+PASS check: .exe runs offline, size < 150 MB, memory < 2.8 GB.
+
+────────────────────────────────────────────────────────────────────────────────
+SESSION 22 — Web Service (FastAPI + React)
+────────────────────────────────────────────────────────────────────────────────
+Goal: Browser UI with all endpoints, fully offline.
+
+Tasks:
+  1. Write src/webapi/app.py
+     - FastAPI application
+     - Endpoints:
+       POST /api/load          → load template (journal + file upload)
+       POST /api/insert-image  → insert image (file upload)
+       POST /api/insert-equation → insert equation (LaTeX string)
+       POST /api/insert-table  → insert table (rows, cols)
+       POST /api/export        → export (formats list)
+       GET  /api/status/{run_id} → current status
+       GET  /api/health        → health check
+     - Static files: serve gui_frontend/build/ at /
+     - CORS: localhost only by default
+
+  2. Build React frontend for web
+     cd gui_frontend
+     npm run build
+     cp -r dist/ ../../src/webapi/static/
+
+  3. Adapt frontend for web (minor changes)
+     - Replace Electron IPC with HTTP fetch calls
+     - Same UI components, different transport
+     - File upload via FormData
+
+  4. Test
+     uvicorn src.webapi.app:app --host 127.0.0.1 --port 8000
+     Open http://localhost:8000 → UI loads
+     Drag template, insert content, export → PDF downloads
+
+  5. Write build/Dockerfile
+     FROM python:3.12-slim
+     RUN apt-get update && apt-get install -y nodejs npm
+     COPY . /app
+     RUN pip install -r requirements.txt
+     RUN cd gui_frontend && npm ci && npm run build
+     EXPOSE 8000
+     CMD ["uvicorn", "src.webapi.app:app", "--host", "0.0.0.0"]
+
+  6. Commit
+     git add . && git commit -m "add: FastAPI web service + React build"
+
+  7. Write session_22_summary.json
+
+PASS check: browser UI loads, all API endpoints respond, Docker build succeeds.
+
+────────────────────────────────────────────────────────────────────────────────
+SESSION 23 — Stress Test & Resume Recovery
+────────────────────────────────────────────────────────────────────────────────
+Goal: 10 papers, forced timeout, resume, no data loss.
+
+Tasks:
+  1. Write scripts/stress_test.py
+     - Loops over 6 journal templates × 2 variations = 12 runs
+     - Each run: full pipeline (ingest → transform → audit → render)
+     - After each run: 10-second pause (simulate user think time)
+     - After run 4: force kill (simulate 45-min timeout)
+     - Record: start time, end time, peak memory, pass/fail
+
+  2. Run stress test (first pass — will be killed)
+     python scripts/stress_test.py
+     → Processes 4 runs, then killed
+
+  3. Run stress test (resume pass)
+     python scripts/stress_test.py --resume
+     → Reads ledger, skips completed runs, finishes remaining 8
+
+  4. Verify
+     - All 12 output directories exist
+     - Each contains final.pdf
+     - Ledger shows 12 completed runs
+     - No data loss (grep "completed" checkpoints/*/final.json → 12 hits)
+     - Total wall-time < 90 min (two 45-min windows)
+
+  5. Commit
+     git add . && git commit -m "add: stress test + resume recovery verified"
+
+  6. Write session_23_summary.json
+
+PASS check: 12/12 runs completed after interruption, all checkpoints intact.
+
+────────────────────────────────────────────────────────────────────────────────
+SESSION 24 — Documentation & Screenshots
+────────────────────────────────────────────────────────────────────────────────
+Goal: Complete docs for users and developers.
+
+Tasks:
+  1. Update README.md
+     - Project description, features, supported journals
+     - Installation (pip install, npm install, PyInstaller download)
+     - Quick start (desktop + web)
+     - Configuration reference
+     - Troubleshooting
+     - Contributing guidelines
+
+  2. Write docs/ARCHITECTURE.md
+     - System diagram (ASCII art)
+     - Data flow: DOCX → AST → Transform → Render → Export
+     - Component descriptions
+     - IPC protocol (JSON-RPC 2.0)
+     - Checkpoint/resume mechanism
+
+  3. Write docs/SCHEMAS.md
+     - All Pydantic models with field descriptions
+     - Example JSON for each model
+     - API request/response examples
+
+  4. Write docs/CONFIG.md
+     - settings.yaml reference
+     - Per-journal config options
+     - Environment variable overrides
+
+  5. Write docs/USER_GUIDE.md
+     - Step-by-step: load template, edit, export
+     - Troubleshooting common issues
+     - FAQ
+
+  6. Write docs/DEVELOPER_GUIDE.md
+     - Development setup
+     - Running tests
+     - Adding a new journal
+     - Adding a new export format
+
+  7. Take screenshots (manual or automated)
+     - gui_frontend/screens/drag_drop.png
+     - gui_frontend/screens/toolbar.png
+     - gui_frontend/screens/equation_editor.png
+     - gui_frontend/screens/export_dialog.png
+     - gui_frontend/screens/final_pdf.png
+
+  8. Write CHANGELOG.md
+     - Session-by-session milestones
+     - Version 2.0.0 features
+
+  9. Commit
+     git add . && git commit -m "add: complete documentation + screenshots"
+
+  10. Write session_24_summary.json
+
+PASS check: all docs render correctly, no broken links, screenshots referenced.
+
+────────────────────────────────────────────────────────────────────────────────
+SESSION 25 — CI/CD Pipeline
+────────────────────────────────────────────────────────────────────────────────
+Goal: GitHub Actions runs tests, linting, and build checks on every push.
+
+Tasks:
+  1. Write .github/workflows/ci.yml
+     name: PaperForge CI
+     on: [push, pull_request]
+     jobs:
+       test:
+         runs-on: ubuntu-latest
+         strategy:
+           matrix:
+             python-version: ["3.10", "3.11", "3.12"]
+         steps:
+           - uses: actions/checkout@v4
+           - uses: actions/setup-python@v5
+             with:
+               python-version: ${{ matrix.python-version }}
+           - run: pip install -e ".[dev]"
+           - run: ruff check src/ tests/
+           - run: pytest tests/ -v --tb=short
+       build:
+         runs-on: ubuntu-latest
+         needs: test
+         steps:
+           - uses: actions/checkout@v4
+           - run: pip install pyinstaller
+           - run: pyinstaller build/pyinstaller_spec.py
+           - run: |
+               SIZE=$(du -sm dist/PaperForge/ | cut -f1)
+               echo "Package size: ${SIZE} MB"
+               if [ "$SIZE" -gt 150 ]; then
+                 echo "ERROR: Package exceeds 150 MB"
+                 exit 1
+               fi
+
+  2. Write .pre-commit-config.yaml
+     repos:
+       - repo: https://github.com/astral-sh/ruff-pre-commit
+         hooks:
+           - id: ruff
+             args: [--fix]
+       - repo: https://github.com/pre-commit/pre-commit-hooks
+         hooks:
+           - id: trailing-whitespace
+           - id: end-of-file-fixer
+           - id: check-json
+           - id: check-yaml
+
+  3. Add ruff configuration to pyproject.toml
+     [tool.ruff]
+     line-length = 100
+     target-version = "py310"
+
+  4. Test locally
+     pre-commit run --all-files
+     pytest tests/ -v
+
+  5. Commit
+     git add . && git commit -m "add: CI/CD pipeline + pre-commit hooks"
+
+  6. Write session_25_summary.json
+
+PASS check: ruff passes, pytest passes, CI config is valid YAML.
+
+────────────────────────────────────────────────────────────────────────────────
+SESSION 26 — Release Packaging & Checksums
+────────────────────────────────────────────────────────────────────────────────
+Goal: Shippable .zip with SHA-256, release notes, git tag.
+
+Tasks:
+  1. Write LICENSE (MIT or project choice)
+
+  2. Create git tag
+     git tag -a v1.0.0 -m "PaperForge 2.0.0 — Initial release"
+     git push origin v1.0.0
+
+  3. Build distribution zip
+     zip -r PaperForge_v2.0.0.zip \
+       dist/PaperForge/ \
+       templates/ \
+       csl/ \
+       config/ \
+       README.md \
+       LICENSE \
+       CHANGELOG.md
+
+  4. Generate SHA-256 checksum
+     sha256sum PaperForge_v2.0.0.zip > PaperForge_v2.0.0.zip.sha256
+
+  5. Write RELEASE_NOTES.md
+     # PaperForge 2.0.0
+     ## Features
+     - Drag-and-drop DOCX template UI (Electron + React)
+     - 6 journal templates: IEEE, Springer, Elsevier, Wiley, MDPI, Nature
+     - Offline PDF/LaTeX/DOCX/JATS export
+     - Semantic audit + JATS compliance (22 rules)
+     - Visual regression testing (SSIM ≥ 0.95)
+     - Checkpoint/resume for 45-min ephemeral sessions
+     - Memory-guarded (<3 GB RAM)
+     - Desktop .exe + web service
+     ## Sessions
+     - 26 autonomous sessions, ~18 hours total
+     - Full checkpoint/resume support
+
+  6. Final commit
+     git add . && git commit -m "release: v2.0.0 — initial release"
+
+  7. Write session_26_summary.json
+
+PASS check: .zip exists, SHA-256 matches, git tag present, release notes complete.
+
+================================================================================
+SESSION DEPENDENCY GRAPH
+================================================================================
+
+  Session 1 (Bootstrap)
+       │
+       ├──→ Session 2 (Schemas & Config)
+       │         │
+       │         ├──→ Session 3 (Ledger & Checkpoint)
+       │         │         │
+       │         │         └──→ Session 4 (Heartbeat & Memory)
+       │         │
+       │         ├──→ Session 5 (Templates)
+       │         │         │
+       │         │         └──→ Session 6 (Test Fixtures)
+       │         │
+       │         └──→ Session 7 (Ingestion Core)
+       │                   │
+       │                   ├──→ Session 8 (Equations)
+       │                   │
+       │                   ├──→ Session 9 (Refs & Images)
+       │                   │
+       │                   └──→ Session 10 (Tables & Cross-Refs)
+       │
+       └──→ Session 11 (IPC Bridge)
+                 │
+                 └──→ Session 12 (Electron UI)
+                           │
+                           └──→ Session 13 (Insertion)
+                                    │
+                                    ├──→ Session 14 (Transform)
+                                    │         │
+                                    │         └──→ Session 15 (CSL)
+                                    │
+                                    ├──→ Session 16 (PDF Render)
+                                    │         │
+                                    │         └──→ Session 17 (Multi-Export)
+                                    │
+                                    └──→ Session 18 (Audit)
+                                              │
+                                              └──→ Session 19 (Visual)
+                                                        │
+                                                        └──→ Session 20 (Orchestrator)
+                                                                  │
+                                                                  ├──→ Session 21 (Desktop)
+                                                                  │
+                                                                  ├──→ Session 22 (Web)
+                                                                  │
+                                                                  └──→ Session 23 (Stress)
+                                                                            │
+                                                                            ├──→ Session 24 (Docs)
+                                                                            │
+                                                                            ├──→ Session 25 (CI)
+                                                                            │
+                                                                            └──→ Session 26 (Release)
+
+  PARALLELIZABLE SESSIONS (can run concurrently if needed):
+    - Sessions 8, 9, 10 (all depend on 7 only)
+    - Sessions 14, 15 (transform chain, independent of rendering)
+    - Sessions 16, 17 (rendering chain, independent of transform)
+    - Sessions 21, 22 (desktop vs web, independent)
+    - Sessions 24, 25, 26 (docs, CI, release — all final)
+
+================================================================================
+RISK REGISTER
+================================================================================
+
+ Risk                              Likelihood  Impact   Mitigation
+ --------------------------------- ----------- -------- ------------------------------------
+ Pandoc binary too large for exe   Medium      High     Use pandoc-lite or custom converter
+ Tectonic missing journal classes  High        Medium   Fallback to article.cls + overrides
+ citeproc-py edge cases            Medium      Low      Wrap in try/except, log warnings
+ Electron packaging on Linux       Low         Medium   Use electron-builder with target config
+ DOCX cross-ref parsing breaks     High        High     Implement regex fallback, manual mapping
+ Memory exceeds 3 GB on complex    Medium      High     Add per-step memory budget, kill if over
+ Template checksum mismatch        Low         Low      Re-download, update manifest
+ Node/Python version mismatch      Low         Medium   Pin versions in CI, use pyproject.toml
+
+================================================================================
+POST-LAUNCH ROADMAP (FUTURE SESSIONS)
+================================================================================
+
+ - Session 27: Zotero/Mendeley integration (reference manager API)
+ - Session 28: Multi-language support (CJK fonts, RTL)
+ - Session 29: Collaborative editing (WebSocket + CRDT)
+ - Session 30: Plugin system (custom Lua filters, export formats)
+ - Session 31: Auto-update mechanism (delta patches)
+ - Session 32: Telemetry (opt-in crash reporting)
+ - Session 33: Accessibility (PDF/UA compliance)
+ - Session 34: Additional journals (ACS, RSC, APS, etc.)
+
+================================================================================
+END OF PLAN
+================================================================================
